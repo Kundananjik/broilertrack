@@ -12,14 +12,14 @@ class Expense
 
     public function forBatch(int $batchId): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM expenses WHERE batch_id = :batch_id ORDER BY date DESC');
+        $stmt = $this->pdo->prepare('SELECT * FROM expenses WHERE batch_id = :batch_id AND is_deleted = 0 ORDER BY date DESC');
         $stmt->execute(['batch_id' => $batchId]);
         return $stmt->fetchAll() ?: [];
     }
 
     public function find(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM expenses WHERE id = :id');
+        $stmt = $this->pdo->prepare('SELECT * FROM expenses WHERE id = :id AND is_deleted = 0');
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         return $row ?: null;
@@ -48,7 +48,7 @@ class Expense
         $sql = 'UPDATE expenses
                 SET batch_id = :batch_id, date = :date, category = :category, item_name = :item_name,
                     quantity = :quantity, unit_cost = :unit_cost, total_cost = :total_cost, supplier = :supplier, notes = :notes
-                WHERE id = :id';
+                WHERE id = :id AND is_deleted = 0';
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             'id' => $id,
@@ -66,14 +66,24 @@ class Expense
 
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo->prepare('DELETE FROM expenses WHERE id = :id');
+        $stmt = $this->pdo->prepare(
+            'UPDATE expenses
+             SET is_deleted = 1, deleted_at = ' . $this->timestampExpression() . '
+             WHERE id = :id AND is_deleted = 0'
+        );
         return $stmt->execute(['id' => $id]);
     }
 
     public function totalCostByBatch(int $batchId): float
     {
-        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(total_cost), 0) FROM expenses WHERE batch_id = :batch_id');
+        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(total_cost), 0) FROM expenses WHERE batch_id = :batch_id AND is_deleted = 0');
         $stmt->execute(['batch_id' => $batchId]);
         return (float)$stmt->fetchColumn();
+    }
+
+    private function timestampExpression(): string
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        return $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'NOW()';
     }
 }

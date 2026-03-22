@@ -55,7 +55,7 @@
                     <td><?= htmlspecialchars(ucfirst((string)$user['role']), ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><?= (int)$user['is_active'] === 1 ? 'Active' : 'Inactive'; ?></td>
                     <td><?= htmlspecialchars((string)$user['created_at'], ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>
+                    <td class="action-cell">
                         <a class="action-link" href="users.php?edit_id=<?= (int)$user['id']; ?>">Edit</a>
                         <?php if ((int)$user['is_active'] === 1): ?>
                         <form method="post" onsubmit="return confirm('Deactivate this user?');">

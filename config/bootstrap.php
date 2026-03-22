@@ -60,3 +60,32 @@ function app_db(): PDO
 
     return $pdo;
 }
+
+function audit_log(string $module, string $action, string $entityType, ?int $entityId = null, array $details = []): void
+{
+    try {
+        $pdo = app_db();
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+        $username = (string)($_SESSION['username'] ?? 'guest');
+        $ipAddress = substr((string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
+        $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO audit_logs (user_id, username, module, action, entity_type, entity_id, details_json, ip_address, user_agent)
+             VALUES (:user_id, :username, :module, :action, :entity_type, :entity_id, :details_json, :ip_address, :user_agent)'
+        );
+        $stmt->execute([
+            'user_id' => $userId,
+            'username' => $username,
+            'module' => $module,
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'details_json' => $details ? json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+        ]);
+    } catch (Throwable $e) {
+        // Logging must not break business flow.
+    }
+}

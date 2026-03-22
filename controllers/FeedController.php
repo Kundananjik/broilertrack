@@ -41,6 +41,13 @@ class FeedController
         }
 
         $saved = $this->feedModel->create($data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('feed_usage', 'create', 'feed_record', null, [
+                'batch_id' => $data['batch_id'],
+                'feed_type' => $data['feed_type'],
+                'total_cost' => $data['total_cost'],
+            ]);
+        }
 
         return $saved
             ? ['success' => true, 'message' => 'Feed usage recorded.']
@@ -60,6 +67,13 @@ class FeedController
         }
 
         $saved = $this->feedModel->update($recordId, $data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('feed_usage', 'update', 'feed_record', $recordId, [
+                'batch_id' => $data['batch_id'],
+                'feed_type' => $data['feed_type'],
+                'total_cost' => $data['total_cost'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'Feed usage updated successfully.']
             : ['success' => false, 'message' => 'Unable to update feed usage.'];
@@ -73,6 +87,9 @@ class FeedController
         }
 
         $deleted = $this->feedModel->delete($recordId);
+        if ($deleted && function_exists('audit_log')) {
+            audit_log('feed_usage', 'delete', 'feed_record', $recordId, []);
+        }
         return $deleted
             ? ['success' => true, 'message' => 'Feed usage deleted successfully.']
             : ['success' => false, 'message' => 'Unable to delete feed usage.'];

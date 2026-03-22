@@ -90,7 +90,7 @@
                     <td>ZMW <?= number_format((float)$expense['unit_cost'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$expense['total_cost'], 2); ?></td>
                     <td><?= htmlspecialchars($expense['supplier'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>
+                    <td class="action-cell">
                         <a class="action-link" href="expenses.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$expense['id']; ?>">Edit</a>
                         <form method="post" onsubmit="return confirm('Delete this expense record?');">
                             <?= csrf_field(); ?>

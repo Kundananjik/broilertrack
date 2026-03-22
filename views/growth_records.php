@@ -70,8 +70,8 @@
                     <td><?= htmlspecialchars($record['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                     <td><?= number_format((float)$record['average_weight_kg'], 2); ?></td>
                     <td><?= number_format((int)$record['birds_sampled']); ?></td>
-                    <td>
-                        <a href="growth_records.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$record['record_id']; ?>">Edit</a>
+                    <td class="action-cell">
+                        <a class="action-link" href="growth_records.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$record['record_id']; ?>">Edit</a>
                         <form method="post" onsubmit="return confirm('Delete this growth record?');">
                             <?= csrf_field(); ?>
                             <input type="hidden" name="action" value="delete">

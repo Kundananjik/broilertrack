@@ -17,6 +17,7 @@ body {
     font-family: 'Segoe UI', Tahoma, sans-serif;
     background: var(--bg);
     color: #102a43;
+    overflow-x: hidden;
 }
 
 a {
@@ -87,6 +88,7 @@ img {
 .content {
     flex: 1;
     padding: 2rem;
+    min-width: 0;
 }
 
 .page-header {
@@ -264,6 +266,22 @@ button:hover {
 .form-grid > a {
     align-self: end;
     margin-top: 1.5rem;
+}
+
+.action-cell {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.action-cell form {
+    margin: 0;
+}
+
+.action-cell a,
+.action-cell button {
+    white-space: nowrap;
 }
 
 .table-responsive {
@@ -483,7 +501,9 @@ button:hover {
     .card .value {
         font-size: 1.2rem;
     }
-    button {
+    .form-grid button,
+    .login-card button,
+    .inline-form button {
         width: 100%;
     }
     .form-grid button {
@@ -507,6 +527,20 @@ button:hover {
     .inline-form input,
     .inline-form button {
         width: 100%;
+    }
+    .action-cell {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.35rem;
+    }
+    .action-cell a,
+    .action-cell form,
+    .action-cell button {
+        width: 100%;
+    }
+    .action-cell a {
+        text-align: center;
     }
     .login-wrapper {
         padding: 1rem 0.75rem;

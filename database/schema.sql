@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS expenses (
     total_cost DECIMAL(12,2) UNSIGNED NOT NULL,
     supplier VARCHAR(120) NULL,
     notes TEXT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_expenses_batch_date (batch_id, date),
     CONSTRAINT chk_expenses_quantity_positive CHECK (quantity > 0),
@@ -48,6 +50,8 @@ CREATE TABLE IF NOT EXISTS feed_usage (
     feed_kg DECIMAL(10,2) UNSIGNED NOT NULL,
     cost_per_kg DECIMAL(10,2) UNSIGNED NOT NULL,
     total_cost DECIMAL(12,2) UNSIGNED NOT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_feed_usage_batch_date (batch_id, date),
     CONSTRAINT chk_feed_usage_feed_kg_positive CHECK (feed_kg > 0),
@@ -62,6 +66,8 @@ CREATE TABLE IF NOT EXISTS growth_records (
     date DATE NOT NULL,
     average_weight_kg DECIMAL(10,3) UNSIGNED NOT NULL,
     birds_sampled INT UNSIGNED NOT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_growth_records_batch_date (batch_id, date),
     CONSTRAINT chk_growth_records_weight_positive CHECK (average_weight_kg > 0),
@@ -78,6 +84,11 @@ CREATE TABLE IF NOT EXISTS sales (
     price_per_bird DECIMAL(10,2) UNSIGNED NOT NULL,
     total_weight DECIMAL(12,3) UNSIGNED NOT NULL,
     total_revenue DECIMAL(14,2) UNSIGNED NOT NULL,
+    paid_amount DECIMAL(14,2) UNSIGNED NOT NULL DEFAULT 0.00,
+    balance_amount DECIMAL(14,2) UNSIGNED NOT NULL DEFAULT 0.00,
+    created_by INT NULL,
+    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     buyer VARCHAR(160) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_sales_batch_date (batch_id, date),
@@ -86,6 +97,9 @@ CREATE TABLE IF NOT EXISTS sales (
     CONSTRAINT chk_sales_price_per_bird_positive CHECK (price_per_bird > 0),
     CONSTRAINT chk_sales_total_weight_non_negative CHECK (total_weight >= 0),
     CONSTRAINT chk_sales_total_revenue_non_negative CHECK (total_revenue >= 0),
+    CONSTRAINT chk_sales_paid_amount_non_negative CHECK (paid_amount >= 0),
+    CONSTRAINT chk_sales_balance_amount_non_negative CHECK (balance_amount >= 0),
+    CONSTRAINT chk_sales_paid_not_exceed_revenue CHECK (paid_amount <= total_revenue),
     CONSTRAINT fk_sales_batch FOREIGN KEY (batch_id) REFERENCES batches(batch_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -110,4 +124,21 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_login_attempts_username_ip (username, ip_address),
     INDEX idx_login_attempts_locked_until (locked_until)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    username VARCHAR(60) NOT NULL,
+    module VARCHAR(60) NOT NULL,
+    action VARCHAR(40) NOT NULL,
+    entity_type VARCHAR(60) NOT NULL,
+    entity_id INT NULL,
+    details_json JSON NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_logs_created_at (created_at),
+    INDEX idx_audit_logs_module_action (module, action),
+    INDEX idx_audit_logs_user_id (user_id)
 ) ENGINE=InnoDB;

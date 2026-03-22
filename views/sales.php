@@ -35,6 +35,9 @@
         <label>Price per bird
             <input type="number" step="0.01" name="price_per_bird" min="0.01" value="<?= htmlspecialchars((string)($editingSale['price_per_bird'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
         </label>
+        <label>Paid Amount
+            <input type="number" step="0.01" name="paid_amount" min="0" value="<?= htmlspecialchars((string)($editingSale['paid_amount'] ?? '0.00'), ENT_QUOTES, 'UTF-8'); ?>" required>
+        </label>
         <label>Buyer
             <input type="text" name="buyer" value="<?= htmlspecialchars($editingSale['buyer'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
         </label>
@@ -70,6 +73,8 @@
                     <th>Total Weight</th>
                     <th>Price per bird</th>
                     <th>Total Revenue</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
                     <th>Buyer</th>
                     <th>Actions</th>
                 </tr>
@@ -83,9 +88,11 @@
                     <td><?= number_format((float)$sale['total_weight'], 2); ?> kg</td>
                     <td>ZMW <?= number_format((float)$sale['price_per_bird'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$sale['total_revenue'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$sale['paid_amount'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$sale['balance_amount'], 2); ?></td>
                     <td><?= htmlspecialchars($sale['buyer'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td>
-                        <a href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>">Edit</a>
+                    <td class="action-cell">
+                        <a class="action-link" href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>">Edit</a>
                         <form method="post" onsubmit="return confirm('Delete this sale record?');">
                             <?= csrf_field(); ?>
                             <input type="hidden" name="action" value="delete">

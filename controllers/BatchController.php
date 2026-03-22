@@ -42,6 +42,12 @@ class BatchController
         $data['total_chick_cost'] = $data['initial_chicks'] * $data['chick_cost'];
 
         $result = $this->batchModel->create($data);
+        if ($result && function_exists('audit_log')) {
+            audit_log('batches', 'create', 'batch', null, [
+                'batch_name' => $data['batch_name'],
+                'initial_chicks' => $data['initial_chicks'],
+            ]);
+        }
 
         return $result
             ? ['success' => true, 'message' => 'Batch created successfully.']
@@ -75,6 +81,14 @@ class BatchController
 
         $data['total_chick_cost'] = $data['initial_chicks'] * $data['chick_cost'];
         $updated = $this->batchModel->update($batchId, $data);
+        if ($updated && function_exists('audit_log')) {
+            audit_log('batches', 'update', 'batch', $batchId, [
+                'batch_name' => $data['batch_name'],
+                'initial_chicks' => $data['initial_chicks'],
+                'current_alive' => $data['current_alive'],
+                'mortality_count' => $data['mortality_count'],
+            ]);
+        }
         return $updated
             ? ['success' => true, 'message' => 'Batch updated successfully.']
             : ['success' => false, 'message' => 'Unable to update batch.'];
@@ -88,6 +102,9 @@ class BatchController
         }
 
         $deleted = $this->batchModel->delete($batchId);
+        if ($deleted && function_exists('audit_log')) {
+            audit_log('batches', 'delete', 'batch', $batchId, []);
+        }
         return $deleted
             ? ['success' => true, 'message' => 'Batch deleted successfully.']
             : ['success' => false, 'message' => 'Unable to delete batch.'];
@@ -115,6 +132,12 @@ class BatchController
         }
 
         $result = $this->batchModel->updateCounts($batchId, $currentAlive, $mortality);
+        if ($result && function_exists('audit_log')) {
+            audit_log('batches', 'update_status', 'batch', $batchId, [
+                'current_alive' => $currentAlive,
+                'mortality_count' => $mortality,
+            ]);
+        }
 
         return $result
             ? ['success' => true, 'message' => 'Batch counts updated.']

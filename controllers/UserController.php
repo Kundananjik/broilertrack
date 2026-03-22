@@ -60,6 +60,12 @@ class UserController
         }
 
         $created = $this->userModel->create($username, $passwordHash, $role);
+        if ($created && function_exists('audit_log')) {
+            audit_log('users', 'create', 'user', null, [
+                'username' => $username,
+                'role' => $role,
+            ]);
+        }
         return $created
             ? ['success' => true, 'message' => 'User created successfully.']
             : ['success' => false, 'message' => 'Unable to create user.'];
@@ -114,6 +120,13 @@ class UserController
         }
 
         $updated = $this->userModel->update($userId, $username, $role, $passwordHash);
+        if ($updated && function_exists('audit_log')) {
+            audit_log('users', 'update', 'user', $userId, [
+                'username' => $username,
+                'role' => $role,
+                'password_changed' => $passwordHash !== null,
+            ]);
+        }
         return $updated
             ? ['success' => true, 'message' => 'User updated successfully.']
             : ['success' => false, 'message' => 'Unable to update user.'];
@@ -138,6 +151,11 @@ class UserController
         }
 
         $saved = $this->userModel->setActive($userId, false);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('users', 'deactivate', 'user', $userId, [
+                'username' => (string)$existing['username'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'User deactivated successfully.']
             : ['success' => false, 'message' => 'Unable to deactivate user.'];
@@ -159,6 +177,11 @@ class UserController
         }
 
         $saved = $this->userModel->setActive($userId, true);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('users', 'reactivate', 'user', $userId, [
+                'username' => (string)$existing['username'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'User reactivated successfully.']
             : ['success' => false, 'message' => 'Unable to reactivate user.'];

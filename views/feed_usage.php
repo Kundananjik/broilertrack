@@ -78,8 +78,8 @@
                     <td><?= number_format((float)$record['feed_kg'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$record['cost_per_kg'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$record['total_cost'], 2); ?></td>
-                    <td>
-                        <a href="feed_usage.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$record['record_id']; ?>">Edit</a>
+                    <td class="action-cell">
+                        <a class="action-link" href="feed_usage.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$record['record_id']; ?>">Edit</a>
                         <form method="post" onsubmit="return confirm('Delete this feed record?');">
                             <?= csrf_field(); ?>
                             <input type="hidden" name="action" value="delete">

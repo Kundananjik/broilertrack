@@ -30,8 +30,8 @@
                     <td><?= number_format((int)$batch['initial_chicks']); ?></td>
                     <td><?= number_format((int)$batch['current_alive']); ?></td>
                     <td><?= number_format((int)$batch['mortality_count']); ?></td>
-                    <td>
-                        <a href="batches.php?edit_id=<?= (int)$batch['batch_id']; ?>">Edit</a>
+                    <td class="action-cell">
+                        <a class="action-link" href="batches.php?edit_id=<?= (int)$batch['batch_id']; ?>">Edit</a>
                         <form method="post" onsubmit="return confirm('Delete this batch and all related records?');">
                             <?= csrf_field(); ?>
                             <input type="hidden" name="action" value="delete_batch">

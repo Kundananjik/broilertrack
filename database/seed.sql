@@ -16,8 +16,8 @@ INSERT INTO growth_records (batch_id, date, average_weight_kg, birds_sampled) VA
 (1, '2026-01-20', 1.200, 12),
 (1, '2026-02-10', 2.150, 15);
 
-INSERT INTO sales (batch_id, date, birds_sold, average_weight_kg, price_per_bird, total_weight, total_revenue, buyer) VALUES
-(1, '2026-02-25', 450, 2.250, 3.10, 1012.50, 3138.75, 'FreshMart Butchery');
+INSERT INTO sales (batch_id, date, birds_sold, average_weight_kg, price_per_bird, total_weight, total_revenue, paid_amount, balance_amount, buyer) VALUES
+(1, '2026-02-25', 450, 2.250, 3.10, 1012.50, 3138.75, 3138.75, 0.00, 'FreshMart Butchery');
 
 INSERT INTO users (username, password_hash, role) VALUES
 ('admin', '$2y$10$0AhJfgp3nuHJww2yDzESSOfxQIZ6FzlfEgrj7eu0x/7aJUQoqmMc.', 'admin');

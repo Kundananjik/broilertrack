@@ -39,7 +39,70 @@
         <p class="label">Current Alive Birds</p>
         <p class="value"><?= number_format((int)$metrics['current_alive']); ?></p>
     </article>
+    <article class="card">
+        <p class="label">Sales Rate</p>
+        <p class="value"><?= number_format((float)$metrics['sales_rate'], 2); ?>%</p>
+    </article>
+    <article class="card">
+        <p class="label">Profit Rate</p>
+        <p class="value"><?= number_format((float)$metrics['profit_rate'], 2); ?>%</p>
+    </article>
+    <article class="card">
+        <p class="label">Growth Rate</p>
+        <p class="value"><?= number_format((float)$metrics['growth_rate'], 2); ?>%</p>
+    </article>
 </section>
+
+<?php
+$collectionRate = (float)$collectionSummary['revenue_total'] > 0
+    ? ((float)$collectionSummary['paid_total'] / (float)$collectionSummary['revenue_total']) * 100
+    : 100.0;
+?>
+<section class="table-section">
+    <h2>Collection Alerts</h2>
+    <p class="muted">
+        Paid: ZMW <?= number_format((float)$collectionSummary['paid_total'], 2); ?> |
+        Outstanding: ZMW <?= number_format((float)$collectionSummary['balance_total'], 2); ?> |
+        Collection Rate: <?= number_format($collectionRate, 2); ?>%
+    </p>
+    <?php if (!empty($overdueBalances)): ?>
+        <div class="alert alert-error">You have overdue balances older than 7 days.</div>
+    <?php elseif ((float)$collectionSummary['balance_total'] > 0): ?>
+        <div class="alert alert-error">Some sales are not fully paid.</div>
+    <?php else: ?>
+        <div class="alert alert-success">All your sales are fully paid.</div>
+    <?php endif; ?>
+</section>
+
+<?php if (!empty($overdueBalances)): ?>
+<section class="table-section">
+    <h2>Overdue Balances</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Buyer</th>
+                    <th>Revenue</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($overdueBalances as $balanceItem): ?>
+                <tr>
+                    <td><?= htmlspecialchars((string)$balanceItem['date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?= htmlspecialchars((string)($balanceItem['buyer'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td>ZMW <?= number_format((float)$balanceItem['total_revenue'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$balanceItem['paid_amount'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$balanceItem['balance_amount'], 2); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php endif; ?>
 
 <section class="table-section">
     <div class="section-header">
@@ -54,6 +117,8 @@
                     <th>Birds Sold</th>
                     <th>Price per bird</th>
                     <th>Total Revenue</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
                     <th>Buyer</th>
                 </tr>
             </thead>
@@ -64,6 +129,8 @@
                     <td><?= number_format((int)$sale['birds_sold']); ?></td>
                     <td>ZMW <?= number_format((float)$sale['price_per_bird'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$sale['total_revenue'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$sale['paid_amount'], 2); ?></td>
+                    <td>ZMW <?= number_format((float)$sale['balance_amount'], 2); ?></td>
                     <td><?= htmlspecialchars((string)($sale['buyer'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
                 </tr>
             <?php endforeach; ?>

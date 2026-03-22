@@ -6,9 +6,14 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for monitoring broiler chick
 - Manage multiple broiler batches from chick placement to harvest.
 - Log and manage expenses, feed usage, growth sampling, and broiler sales with create/edit/deactivate-style controls where applicable.
 - Automatic profitability metrics (expenses, revenue, net profit, feed conversion, and unit costs) computed per batch using PHP only.
+- Sales collection tracking with `paid` and `balance` per sale.
+- Soft-delete protection for expenses, feed usage, growth records, and sales (records are hidden from operations and analytics instead of hard-deleted).
+- Admin reporting and compliance:
+  - `reports.php` with batch/date filters and CSV export.
+  - `audit_logs.php` to review operational actions.
 - Role-based access:
   - `admin`: full operational access + user management.
-  - `salesperson`: sales module access + dedicated sales dashboard.
+  - `salesperson`: sales module access + dedicated sales dashboard scoped to their own sales records.
 - Admin user lifecycle management:
   - Create users with role assignment.
   - Edit username/role.
@@ -36,7 +41,7 @@ After signing in as admin, create a batch, then use the sidebar modules to recor
 
 ## Role access summary
 - Public page: `index.php` (welcome page)
-- Admin pages: `dashboard.php`, `add_batch.php`, `batches.php`, `expenses.php`, `feed_usage.php`, `growth_records.php`, `users.php`, `sales.php`
+- Admin pages: `dashboard.php`, `add_batch.php`, `batches.php`, `expenses.php`, `feed_usage.php`, `growth_records.php`, `users.php`, `sales.php`, `reports.php`, `audit_logs.php`
 - Salesperson pages: `dashboard.php` (sales dashboard view), `sales.php`
 
 ## Security notes
@@ -44,6 +49,7 @@ After signing in as admin, create a batch, then use the sidebar modules to recor
 - Admin cannot deactivate their own currently logged-in account.
 - Username validation enforces a safe format and uniqueness.
 - Passwords must be at least 8 characters.
+- Salesperson edit/delete visibility is ownership-scoped by `created_by`.
 
 ## Quick test run
 - Run `php tests/run.php` from the project root to execute lightweight validation and metrics tests.

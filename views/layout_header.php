@@ -45,6 +45,8 @@ if (!isset($_SESSION)) {
                 <a class="nav-link text-white" href="feed_usage.php">Feed Usage</a>
                 <a class="nav-link text-white" href="growth_records.php">Growth</a>
                 <a class="nav-link text-white" href="users.php">Users</a>
+                <a class="nav-link text-white" href="reports.php">Reports</a>
+                <a class="nav-link text-white" href="audit_logs.php">Audit Logs</a>
                 <?php endif; ?>
                 <a class="nav-link text-white" href="sales.php">Sales</a>
                 <a class="nav-link text-white logout" href="logout.php">Logout</a>

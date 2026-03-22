@@ -36,6 +36,13 @@ class ExpenseController
         }
 
         $saved = $this->expenseModel->create($data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('expenses', 'create', 'expense', null, [
+                'batch_id' => $data['batch_id'],
+                'category' => $data['category'],
+                'total_cost' => $data['total_cost'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'Expense recorded successfully.']
             : ['success' => false, 'message' => 'Failed to record expense.'];
@@ -54,6 +61,13 @@ class ExpenseController
         }
 
         $saved = $this->expenseModel->update($expenseId, $data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('expenses', 'update', 'expense', $expenseId, [
+                'batch_id' => $data['batch_id'],
+                'category' => $data['category'],
+                'total_cost' => $data['total_cost'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'Expense updated successfully.']
             : ['success' => false, 'message' => 'Failed to update expense.'];
@@ -67,6 +81,9 @@ class ExpenseController
         }
 
         $deleted = $this->expenseModel->delete($expenseId);
+        if ($deleted && function_exists('audit_log')) {
+            audit_log('expenses', 'delete', 'expense', $expenseId, []);
+        }
         return $deleted
             ? ['success' => true, 'message' => 'Expense deleted successfully.']
             : ['success' => false, 'message' => 'Failed to delete expense.'];

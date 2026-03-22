@@ -53,6 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
+                audit_log('auth', 'login_success', 'user', (int)$user['id'], [
+                    'username' => (string)$user['username'],
+                    'role' => (string)$user['role'],
+                ]);
                 header('Location: dashboard.php');
                 exit;
             } else {
@@ -81,6 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'ip_address' => $ipAddress,
                     'attempt_count' => $newAttempts,
                     'locked_until' => $lockedUntil,
+                ]);
+
+                audit_log('auth', 'login_failed', 'user', $user ? (int)$user['id'] : null, [
+                    'username' => $username,
+                    'reason' => $error,
+                    'attempt_count' => $newAttempts,
                 ]);
             }
             }

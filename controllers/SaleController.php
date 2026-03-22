@@ -15,12 +15,12 @@ class SaleController
 
     public function list(int $batchId): array
     {
-        return $this->saleModel->forBatch($batchId);
+        return $this->saleModel->forBatch($batchId, $this->salespersonOwnerId());
     }
 
     public function find(int $saleId): ?array
     {
-        return $this->saleModel->find($saleId);
+        return $this->saleModel->find($saleId, $this->salespersonOwnerId());
     }
 
     public function store(array $input): array
@@ -30,7 +30,19 @@ class SaleController
             return ['success' => false, 'message' => $data['error']];
         }
 
-        return $this->saleModel->createWithBatchUpdate($data);
+        $data['created_by'] = $this->currentUserId();
+        $result = $this->saleModel->createWithBatchUpdate($data);
+        if (($result['success'] ?? false) && function_exists('audit_log')) {
+            audit_log('sales', 'create', 'sale', isset($result['sale_id']) ? (int)$result['sale_id'] : null, [
+                'batch_id' => $data['batch_id'],
+                'birds_sold' => $data['birds_sold'],
+                'total_revenue' => $data['total_revenue'],
+                'paid_amount' => $data['paid_amount'],
+                'balance_amount' => $data['balance_amount'],
+            ]);
+        }
+
+        return $result;
     }
 
     public function update(array $input): array
@@ -45,7 +57,18 @@ class SaleController
             return ['success' => false, 'message' => $data['error']];
         }
 
-        return $this->saleModel->updateWithBatchReconcile($saleId, $data);
+        $result = $this->saleModel->updateWithBatchReconcile($saleId, $data, $this->salespersonOwnerId());
+        if (($result['success'] ?? false) && function_exists('audit_log')) {
+            audit_log('sales', 'update', 'sale', $saleId, [
+                'batch_id' => $data['batch_id'],
+                'birds_sold' => $data['birds_sold'],
+                'total_revenue' => $data['total_revenue'],
+                'paid_amount' => $data['paid_amount'],
+                'balance_amount' => $data['balance_amount'],
+            ]);
+        }
+
+        return $result;
     }
 
     public function delete(array $input): array
@@ -55,7 +78,12 @@ class SaleController
             return ['success' => false, 'message' => 'Sale record not found.'];
         }
 
-        return $this->saleModel->deleteWithBatchRestore($saleId);
+        $result = $this->saleModel->deleteWithBatchRestore($saleId, $this->salespersonOwnerId());
+        if (($result['success'] ?? false) && function_exists('audit_log')) {
+            audit_log('sales', 'delete', 'sale', $saleId, []);
+        }
+
+        return $result;
     }
 
     private function validatedData(array $input): array
@@ -66,6 +94,7 @@ class SaleController
             'birds_sold' => isset($input['birds_sold']) ? (int)$input['birds_sold'] : 0,
             'average_weight_kg' => isset($input['average_weight_kg']) ? (float)$input['average_weight_kg'] : 0.0,
             'price_per_bird' => isset($input['price_per_bird']) ? (float)$input['price_per_bird'] : 0.0,
+            'paid_amount' => isset($input['paid_amount']) ? (float)$input['paid_amount'] : 0.0,
             'buyer' => trim($input['buyer'] ?? ''),
         ];
 
@@ -83,8 +112,32 @@ class SaleController
 
         $data['total_weight'] = $data['birds_sold'] * $data['average_weight_kg'];
         $data['total_revenue'] = $data['birds_sold'] * $data['price_per_bird'];
+        if ($data['paid_amount'] < 0) {
+            return ['error' => 'Paid amount cannot be negative.'];
+        }
+        if ($data['paid_amount'] > $data['total_revenue']) {
+            return ['error' => 'Paid amount cannot exceed total revenue.'];
+        }
+        $data['balance_amount'] = $data['total_revenue'] - $data['paid_amount'];
 
         return $data;
+    }
+
+    private function salespersonOwnerId(): ?int
+    {
+        $role = (string)($_SESSION['role'] ?? '');
+        if ($role !== 'salesperson') {
+            return null;
+        }
+
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+        return $userId > 0 ? $userId : -1;
+    }
+
+    private function currentUserId(): ?int
+    {
+        $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+        return $userId > 0 ? $userId : null;
     }
 
 }

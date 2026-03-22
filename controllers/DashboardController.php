@@ -25,8 +25,18 @@ class DashboardController
         return $this->batchModel->all();
     }
 
-    public function recentSales(int $batchId, int $limit = 8): array
+    public function recentSales(int $batchId, int $limit = 8, ?int $createdBy = null): array
     {
-        return $this->dashboard->recentSales($batchId, $limit);
+        return $this->dashboard->recentSales($batchId, $limit, $createdBy);
+    }
+
+    public function collectionSummary(int $batchId, ?int $createdBy = null): array
+    {
+        return $this->dashboard->collectionSummary($batchId, $createdBy);
+    }
+
+    public function overdueBalances(int $batchId, int $days = 7, int $limit = 5, ?int $createdBy = null): array
+    {
+        return $this->dashboard->overdueBalances($batchId, $days, $limit, $createdBy);
     }
 }

@@ -51,7 +51,9 @@ function make_pdo(): PDO
         unit_cost REAL NOT NULL,
         total_cost REAL NOT NULL,
         supplier TEXT,
-        notes TEXT
+        notes TEXT,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT
     )');
 
     $pdo->exec('CREATE TABLE feed_usage (
@@ -61,7 +63,9 @@ function make_pdo(): PDO
         feed_type TEXT NOT NULL,
         feed_kg REAL NOT NULL,
         cost_per_kg REAL NOT NULL,
-        total_cost REAL NOT NULL
+        total_cost REAL NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT
     )');
 
     $pdo->exec('CREATE TABLE growth_records (
@@ -69,7 +73,9 @@ function make_pdo(): PDO
         batch_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         average_weight_kg REAL NOT NULL,
-        birds_sampled INTEGER NOT NULL
+        birds_sampled INTEGER NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT
     )');
 
     $pdo->exec('CREATE TABLE sales (
@@ -81,7 +87,12 @@ function make_pdo(): PDO
         price_per_bird REAL NOT NULL,
         total_weight REAL NOT NULL,
         total_revenue REAL NOT NULL,
-        buyer TEXT
+        paid_amount REAL NOT NULL DEFAULT 0,
+        balance_amount REAL NOT NULL DEFAULT 0,
+        buyer TEXT,
+        created_by INTEGER,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT
     )');
 
     return $pdo;
@@ -201,4 +212,3 @@ try {
     fwrite(STDERR, "Test failure: " . $exception->getMessage() . "\n");
     exit(1);
 }
-

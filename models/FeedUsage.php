@@ -12,14 +12,14 @@ class FeedUsage
 
     public function forBatch(int $batchId): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM feed_usage WHERE batch_id = :batch_id ORDER BY date DESC');
+        $stmt = $this->pdo->prepare('SELECT * FROM feed_usage WHERE batch_id = :batch_id AND is_deleted = 0 ORDER BY date DESC');
         $stmt->execute(['batch_id' => $batchId]);
         return $stmt->fetchAll() ?: [];
     }
 
     public function find(int $recordId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM feed_usage WHERE record_id = :record_id');
+        $stmt = $this->pdo->prepare('SELECT * FROM feed_usage WHERE record_id = :record_id AND is_deleted = 0');
         $stmt->execute(['record_id' => $recordId]);
         $row = $stmt->fetch();
         return $row ?: null;
@@ -45,7 +45,7 @@ class FeedUsage
         $sql = 'UPDATE feed_usage
                 SET batch_id = :batch_id, date = :date, feed_type = :feed_type, feed_kg = :feed_kg,
                     cost_per_kg = :cost_per_kg, total_cost = :total_cost
-                WHERE record_id = :record_id';
+                WHERE record_id = :record_id AND is_deleted = 0';
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             'record_id' => $recordId,
@@ -60,21 +60,31 @@ class FeedUsage
 
     public function delete(int $recordId): bool
     {
-        $stmt = $this->pdo->prepare('DELETE FROM feed_usage WHERE record_id = :record_id');
+        $stmt = $this->pdo->prepare(
+            'UPDATE feed_usage
+             SET is_deleted = 1, deleted_at = ' . $this->timestampExpression() . '
+             WHERE record_id = :record_id AND is_deleted = 0'
+        );
         return $stmt->execute(['record_id' => $recordId]);
     }
 
     public function totalFeedKg(int $batchId): float
     {
-        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(feed_kg), 0) FROM feed_usage WHERE batch_id = :batch_id');
+        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(feed_kg), 0) FROM feed_usage WHERE batch_id = :batch_id AND is_deleted = 0');
         $stmt->execute(['batch_id' => $batchId]);
         return (float)$stmt->fetchColumn();
     }
 
     public function totalFeedCost(int $batchId): float
     {
-        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(total_cost), 0) FROM feed_usage WHERE batch_id = :batch_id');
+        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(total_cost), 0) FROM feed_usage WHERE batch_id = :batch_id AND is_deleted = 0');
         $stmt->execute(['batch_id' => $batchId]);
         return (float)$stmt->fetchColumn();
+    }
+
+    private function timestampExpression(): string
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        return $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'NOW()';
     }
 }

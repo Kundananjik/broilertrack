@@ -31,6 +31,13 @@ class GrowthController
         }
 
         $saved = $this->growthModel->create($data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('growth_records', 'create', 'growth_record', null, [
+                'batch_id' => $data['batch_id'],
+                'average_weight_kg' => $data['average_weight_kg'],
+                'birds_sampled' => $data['birds_sampled'],
+            ]);
+        }
 
         return $saved
             ? ['success' => true, 'message' => 'Growth record saved.']
@@ -50,6 +57,13 @@ class GrowthController
         }
 
         $saved = $this->growthModel->update($recordId, $data);
+        if ($saved && function_exists('audit_log')) {
+            audit_log('growth_records', 'update', 'growth_record', $recordId, [
+                'batch_id' => $data['batch_id'],
+                'average_weight_kg' => $data['average_weight_kg'],
+                'birds_sampled' => $data['birds_sampled'],
+            ]);
+        }
         return $saved
             ? ['success' => true, 'message' => 'Growth record updated successfully.']
             : ['success' => false, 'message' => 'Unable to update growth record.'];
@@ -63,6 +77,9 @@ class GrowthController
         }
 
         $deleted = $this->growthModel->delete($recordId);
+        if ($deleted && function_exists('audit_log')) {
+            audit_log('growth_records', 'delete', 'growth_record', $recordId, []);
+        }
         return $deleted
             ? ['success' => true, 'message' => 'Growth record deleted successfully.']
             : ['success' => false, 'message' => 'Unable to delete growth record.'];
