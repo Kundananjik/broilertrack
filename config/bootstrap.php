@@ -24,7 +24,7 @@ function require_guest(): void
 {
     app_start_session();
     if (isset($_SESSION['user_id'])) {
-        header('Location: index.php');
+        header('Location: dashboard.php');
         exit;
     }
 }

@@ -35,8 +35,9 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for monitoring broiler chick
 After signing in as admin, create a batch, then use the sidebar modules to record expenses, feed usage, growth samples, and sales. Admin can also open `Users` to create and manage admin/salesperson accounts.
 
 ## Role access summary
-- Admin pages: `add_batch.php`, `batches.php`, `expenses.php`, `feed_usage.php`, `growth_records.php`, `users.php`, `sales.php`, `index.php`
-- Salesperson pages: `index.php` (sales dashboard view), `sales.php`
+- Public page: `index.php` (welcome page)
+- Admin pages: `dashboard.php`, `add_batch.php`, `batches.php`, `expenses.php`, `feed_usage.php`, `growth_records.php`, `users.php`, `sales.php`
+- Salesperson pages: `dashboard.php` (sales dashboard view), `sales.php`
 
 ## Security notes
 - Inactive users cannot log in.

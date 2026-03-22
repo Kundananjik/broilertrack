@@ -333,6 +333,16 @@ button:hover {
     gap: 0.75rem;
 }
 
+.welcome-card h1 {
+    margin: 0.4rem 0 0.6rem;
+    color: #1f4f82;
+    font-size: 1.3rem;
+}
+
+.welcome-card .muted {
+    color: #5f738a;
+}
+
 .app-footer {
     margin-top: 1.25rem;
     background: linear-gradient(140deg, #0f2740 0%, #173d63 100%);

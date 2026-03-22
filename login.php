@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
-                header('Location: index.php');
+                header('Location: dashboard.php');
                 exit;
             } else {
                 if ($user && (int)$user['is_active'] !== 1) {

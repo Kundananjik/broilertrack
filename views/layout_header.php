@@ -37,7 +37,7 @@ if (!isset($_SESSION)) {
         </div>
         <div class="collapse d-lg-block w-100" id="sidebarNav">
             <nav class="nav flex-lg-column flex-row flex-wrap gap-2">
-                <a class="nav-link text-white" href="index.php">Dashboard</a>
+                <a class="nav-link text-white" href="dashboard.php">Dashboard</a>
                 <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
                 <a class="nav-link text-white" href="batches.php">Batches</a>
                 <a class="nav-link text-white" href="add_batch.php">Add Batch</a>

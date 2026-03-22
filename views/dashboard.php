@@ -4,7 +4,7 @@
 </section>
 <?php else: ?>
 <section class="filters">
-    <form method="get" action="index.php" class="inline-form">
+    <form method="get" action="dashboard.php" class="inline-form">
         <label for="batch_id">Batch:</label>
         <select name="batch_id" id="batch_id">
             <?php foreach ($batches as $batch): ?>
