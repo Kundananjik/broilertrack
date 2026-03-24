@@ -137,13 +137,24 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
-    min-width: 600px;
+    min-width: 0;
+    table-layout: fixed;
 }
 
 table th, table td {
     border: 1px solid var(--border);
     padding: 0.5rem;
     text-align: left;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+table code {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .form-grid {
@@ -287,6 +298,32 @@ button:hover {
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.audit-log-section .table-responsive {
+    overflow-x: visible;
+}
+
+.audit-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+}
+
+.audit-table th,
+.audit-table td {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+.audit-table code {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    margin: 0;
 }
 
 .section-header {
@@ -517,7 +554,10 @@ button:hover {
     }
     .table-section table,
     .form-section table {
-        min-width: 520px;
+        min-width: 0;
+    }
+    .audit-log-section .audit-table {
+        min-width: 0;
     }
     .inline-form {
         flex-direction: column;
@@ -569,6 +609,9 @@ button:hover {
     }
     .table-section table,
     .form-section table {
-        min-width: 460px;
+        min-width: 0;
+    }
+    .audit-log-section .audit-table {
+        min-width: 0;
     }
 }

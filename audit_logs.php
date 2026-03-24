@@ -82,9 +82,9 @@ include __DIR__ . '/views/layout_header.php';
     </form>
 </section>
 
-<section class="table-section">
+<section class="table-section audit-log-section">
     <div class="table-responsive">
-        <table class="table table-striped table-bordered align-middle">
+        <table class="table table-striped table-bordered align-middle audit-table">
             <thead>
                 <tr>
                     <th>Time</th>

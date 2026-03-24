@@ -1,13 +1,22 @@
 <?php
 declare(strict_types=1);
 
+date_default_timezone_set('Africa/Lusaka');
+
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/csrf.php';
 
 function app_start_session(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+        ini_set('session.use_strict_mode', '1');
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        session_start([
+            'cookie_httponly' => true,
+            'cookie_samesite' => 'Lax',
+            'cookie_secure' => $isHttps,
+        ]);
     }
 }
 
@@ -64,11 +73,21 @@ function app_db(): PDO
 function audit_log(string $module, string $action, string $entityType, ?int $entityId = null, array $details = []): void
 {
     try {
+        app_start_session();
         $pdo = app_db();
         $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
         $username = (string)($_SESSION['username'] ?? 'guest');
         $ipAddress = substr((string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
         $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+        $detailsJson = null;
+        if (!empty($details)) {
+            try {
+                $detailsJson = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            } catch (JsonException $jsonException) {
+                $detailsJson = json_encode(['_warning' => 'details_encode_failed']);
+                error_log('Audit log details_json encode failed: ' . $jsonException->getMessage());
+            }
+        }
 
         $stmt = $pdo->prepare(
             'INSERT INTO audit_logs (user_id, username, module, action, entity_type, entity_id, details_json, ip_address, user_agent)
@@ -81,11 +100,11 @@ function audit_log(string $module, string $action, string $entityType, ?int $ent
             'action' => $action,
             'entity_type' => $entityType,
             'entity_id' => $entityId,
-            'details_json' => $details ? json_encode($details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+            'details_json' => $detailsJson,
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
         ]);
     } catch (Throwable $e) {
-        // Logging must not break business flow.
+        error_log('Audit log insert failed: ' . $e->getMessage());
     }
 }
