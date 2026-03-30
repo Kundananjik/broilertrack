@@ -1,55 +1,86 @@
 # BroilerTrack Management System
 
-BroilerTrack is a lightweight PHP + MySQL dashboard for monitoring broiler chicken production cycles on a local XAMPP stack.
+BroilerTrack is a lightweight PHP + MySQL dashboard for broiler batch operations, sales collection, and farm financial reporting.
 
 ## Features
-- Manage multiple broiler batches from chick placement to harvest.
-- Log and manage expenses, feed usage, and broiler sales with create/edit/deactivate-style controls where applicable.
-- Automatic profitability metrics (expenses, revenue, net profit, and unit costs) computed per batch using PHP only.
-- Sales collection tracking with `paid` and `balance` per sale.
-- Soft-delete protection for expenses, feed usage, and sales (records are hidden from operations and analytics instead of hard-deleted).
-- Admin reporting and compliance:
-  - `reports.php` with batch/date filters and CSV export.
-  - `audit_logs.php` to review operational actions.
-- Role-based access:
-  - `admin`: full operational access + user management.
-- `salesperson`: sales module access + dedicated sales dashboard.
-- Admin user lifecycle management:
-  - Create users with role assignment.
-  - Edit username/role.
-  - Optional password reset during user edit.
-  - Deactivate/reactivate user accounts.
-- Session-protected interface with password hashing, CSRF validation on write actions, and login rate-limiting.
+- Batch management from chick placement to sales.
+- Expense and feed usage tracking.
+- Sales workflow with shared visibility across all sales personnel.
+- Payment posting ledger (`sales_payments`) for collection updates:
+  - Post payment entries per sale.
+  - `paid_amount` and `balance_amount` are recalculated safely.
+  - Overpayment is blocked by validation.
+- Dashboard metrics for revenue, expenses, profit, sales rate, mortality, and collections.
+- Admin reporting (`reports.php`) with batch/date filters and CSV/Excel/PDF export.
+- Audit logging (`audit_logs.php`) for operational actions.
+- Soft-delete behavior for expenses, feed usage, and sales.
+- Light/Dark theme toggle in the authenticated layout with `localStorage` persistence.
+- Modernized public pages (`index.php`, `login.php`) and responsive UI.
+
+## Removed Features
+- Weighing/growth module has been retired from active use:
+  - No growth menu item in sidebar.
+  - `growth_records.php` is retired.
+  - Sales entry no longer requires weighing inputs from users.
+
+## Role Access
+- `admin`
+  - Full operational access.
+  - User management.
+  - Sale detail edit/delete permissions.
+- `salesperson`
+  - Sales module access.
+  - Sales dashboard access.
+  - Can view all sales and post payments.
+  - Cannot edit/delete sale detail records.
 
 ## Requirements
-- PHP 8.x with the PDO MySQL extension (bundled with XAMPP).
-- MySQL 5.7+ or 8.x.
-- No Composer or JavaScript chart libraries are required.
+- PHP 8.x with PDO MySQL extension.
+- MySQL/MariaDB.
+- No Composer required.
 
 ## Installation (XAMPP)
-1. Copy the `broilertrack` directory into `C:\xampp\htdocs`.
-2. Start Apache and MySQL from the XAMPP Control Panel.
-3. Create a database named `broilertrack`, then run `database/schema.sql` followed by `database/seed.sql`.
-4. Update `config/database.php` if your MySQL credentials differ from the defaults.
-5. Visit `http://localhost/broilertrack/login.php` to sign in.
+1. Copy the project folder to `C:\xampp\htdocs\broilertrack`.
+2. Start Apache and MySQL.
+3. Create database `broilertrack`.
+4. Run `database/schema.sql`, then `database/seed.sql`.
+5. Update DB settings in `config/database.php` or set env vars:
+   - `BROILERTRACK_DB_HOST`
+   - `BROILERTRACK_DB_NAME`
+   - `BROILERTRACK_DB_USER`
+   - `BROILERTRACK_DB_PASS`
+6. Open `http://localhost/broilertrack/login.php`.
 
-## Default credentials
+## Default Credentials
 - Username: `admin`
 - Password: `admin123`
 
-After signing in as admin, create a batch, then use the sidebar modules to record expenses, feed usage, and sales. Admin can also open `Users` to create and manage admin/salesperson accounts.
+## Pages
+- Public:
+  - `index.php`
+  - `login.php`
+- Admin:
+  - `dashboard.php`
+  - `add_batch.php`
+  - `batches.php`
+  - `expenses.php`
+  - `feed_usage.php`
+  - `users.php`
+  - `sales.php`
+  - `reports.php`
+  - `audit_logs.php`
+- Salesperson:
+  - `dashboard.php` (sales dashboard view)
+  - `sales.php`
 
-## Role access summary
-- Public page: `index.php` (welcome page)
-- Admin pages: `dashboard.php`, `add_batch.php`, `batches.php`, `expenses.php`, `feed_usage.php`, `users.php`, `sales.php`, `reports.php`, `audit_logs.php`
-- Salesperson pages: `dashboard.php` (sales dashboard view), `sales.php`
-
-## Security notes
+## Security Notes
+- Session-protected routes.
+- CSRF protection on write actions.
+- Password hashing for credentials.
+- Login attempt rate-limiting / lockout.
 - Inactive users cannot log in.
-- Admin cannot deactivate their own currently logged-in account.
-- Username validation enforces a safe format and uniqueness.
-- Passwords must be at least 8 characters.
-- Sales are visible to all sales personnel; sale detail edit/delete actions are admin-only.
+- Admin cannot deactivate own active session account.
 
-## Quick test run
-- Run `php tests/run.php` from the project root to execute lightweight validation and metrics tests.
+## Testing
+- Run:
+  - `php tests/run.php`
