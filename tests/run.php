@@ -68,24 +68,14 @@ function make_pdo(): PDO
         deleted_at TEXT
     )');
 
-    $pdo->exec('CREATE TABLE growth_records (
-        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        batch_id INTEGER NOT NULL,
-        date TEXT NOT NULL,
-        average_weight_kg REAL NOT NULL,
-        birds_sampled INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0,
-        deleted_at TEXT
-    )');
-
     $pdo->exec('CREATE TABLE sales (
         sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
         batch_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         birds_sold INTEGER NOT NULL,
-        average_weight_kg REAL NOT NULL,
+        average_weight_kg REAL NOT NULL DEFAULT 0,
         price_per_bird REAL NOT NULL,
-        total_weight REAL NOT NULL,
+        total_weight REAL NOT NULL DEFAULT 0,
         total_revenue REAL NOT NULL,
         paid_amount REAL NOT NULL DEFAULT 0,
         balance_amount REAL NOT NULL DEFAULT 0,
@@ -139,7 +129,6 @@ function test_sale_inventory_guard(): void
         'batch_id' => $batchId,
         'date' => '2026-02-10',
         'birds_sold' => 11,
-        'average_weight_kg' => 2.0,
         'price_per_bird' => 6.0,
         'buyer' => 'Buyer',
     ]);
@@ -157,7 +146,6 @@ function test_sale_decrements_current_alive(): void
         'batch_id' => $batchId,
         'date' => '2026-02-10',
         'birds_sold' => 5,
-        'average_weight_kg' => 2.0,
         'price_per_bird' => 6.0,
         'buyer' => 'Buyer',
     ]);
@@ -166,7 +154,6 @@ function test_sale_decrements_current_alive(): void
     $remaining = (int)$pdo->query("SELECT current_alive FROM batches WHERE batch_id = {$batchId}")->fetchColumn();
     assert_equals(15, $remaining, 'current_alive should be decremented by birds_sold.');
 }
-
 
 function test_sale_payment_updates_paid_and_balance(): void
 {
@@ -178,7 +165,6 @@ function test_sale_payment_updates_paid_and_balance(): void
         'batch_id' => $batchId,
         'date' => '2026-02-11',
         'birds_sold' => 5,
-        'average_weight_kg' => 2.0,
         'price_per_bird' => 10.0,
         'buyer' => 'Buyer',
     ]);
@@ -208,7 +194,6 @@ function test_sale_payment_cannot_exceed_balance(): void
         'batch_id' => $batchId,
         'date' => '2026-02-11',
         'birds_sold' => 5,
-        'average_weight_kg' => 2.0,
         'price_per_bird' => 10.0,
         'buyer' => 'Buyer',
     ]);
@@ -222,11 +207,12 @@ function test_sale_payment_cannot_exceed_balance(): void
     ]);
     assert_true(($paymentResult['success'] ?? false) === false, 'Payment should fail when it exceeds current balance.');
 }
+
 function test_batch_status_considers_sold_birds(): void
 {
     $pdo = make_pdo();
     $batchId = seed_batch($pdo, 100, 70, 0);
-    $pdo->exec("INSERT INTO sales (batch_id, date, birds_sold, average_weight_kg, price_per_bird, total_weight, total_revenue, buyer) VALUES ({$batchId}, '2026-02-01', 30, 2.0, 6.0, 60.0, 180.0, 'X')");
+    $pdo->exec("INSERT INTO sales (batch_id, date, birds_sold, price_per_bird, total_revenue, buyer) VALUES ({$batchId}, '2026-02-01', 30, 6.0, 180.0, 'X')");
 
     $controller = new BatchController($pdo);
     $result = $controller->updateStatus([
@@ -245,8 +231,7 @@ function test_dashboard_metrics(): void
 
     $pdo->exec("INSERT INTO expenses (batch_id, date, category, item_name, quantity, unit_cost, total_cost, supplier, notes) VALUES ({$batchId}, '2026-01-02', 'Utilities', 'Power', 1, 10, 10, '', '')");
     $pdo->exec("INSERT INTO feed_usage (batch_id, date, feed_type, feed_kg, cost_per_kg, total_cost) VALUES ({$batchId}, '2026-01-03', 'Starter', 100, 1.2, 120)");
-    $pdo->exec("INSERT INTO growth_records (batch_id, date, average_weight_kg, birds_sampled) VALUES ({$batchId}, '2026-01-10', 1.500, 10)");
-    $pdo->exec("INSERT INTO sales (batch_id, date, birds_sold, average_weight_kg, price_per_bird, total_weight, total_revenue, buyer) VALUES ({$batchId}, '2026-02-01', 40, 2.0, 6.0, 80, 240, 'Buyer')");
+    $pdo->exec("INSERT INTO sales (batch_id, date, birds_sold, price_per_bird, total_revenue, buyer) VALUES ({$batchId}, '2026-02-01', 40, 6.0, 240, 'Buyer')");
 
     $dashboard = new Dashboard($pdo);
     $metrics = $dashboard->getMetrics($batchId);
@@ -269,4 +254,3 @@ try {
     fwrite(STDERR, "Test failure: " . $exception->getMessage() . "\n");
     exit(1);
 }
-

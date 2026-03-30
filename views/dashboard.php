@@ -40,14 +40,6 @@
         <p class="value"><?= number_format($metrics['total_feed_used'], 2); ?></p>
     </article>
     <article class="card">
-        <p class="label">Average Bird Weight (kg)</p>
-        <p class="value"><?= $metrics['average_weight'] !== null ? number_format($metrics['average_weight'], 2) : 'N/A'; ?></p>
-    </article>
-    <article class="card">
-        <p class="label">Total Production Weight (kg)</p>
-        <p class="value"><?= number_format($metrics['total_production_weight'], 2); ?></p>
-    </article>
-    <article class="card">
         <p class="label">Total Expenses</p>
         <p class="value">ZMW <?= number_format($metrics['total_expenses'], 2); ?></p>
     </article>
@@ -60,10 +52,6 @@
         <p class="value">ZMW <?= number_format($metrics['net_profit'], 2); ?></p>
     </article>
     <article class="card">
-        <p class="label">Feed Conversion Ratio</p>
-        <p class="value"><?= number_format($metrics['feed_conversion_ratio'], 2); ?></p>
-    </article>
-    <article class="card">
         <p class="label">Price per Bird</p>
         <p class="value">ZMW <?= number_format($metrics['cost_per_bird'], 2); ?></p>
     </article>
@@ -74,10 +62,6 @@
     <article class="card">
         <p class="label">Profit Rate</p>
         <p class="value"><?= number_format($metrics['profit_rate'], 2); ?>%</p>
-    </article>
-    <article class="card">
-        <p class="label">Growth Rate</p>
-        <p class="value"><?= number_format($metrics['growth_rate'], 2); ?>%</p>
     </article>
 </section>
 

@@ -287,7 +287,10 @@ class Sale
             $currentBalance = (float)$sale['balance_amount'];
             if ($amount > $currentBalance) {
                 $this->pdo->rollBack();
-                return ['success' => false, 'message' => 'Payment amount cannot exceed outstanding balance.'];
+                return [
+                    'success' => false,
+                    'message' => 'Payment amount cannot exceed outstanding balance (ZMW ' . number_format($currentBalance, 2, '.', '') . ').',
+                ];
             }
 
             $insertPayment = $this->pdo->prepare(
@@ -329,7 +332,14 @@ class Sale
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            return ['success' => false, 'message' => 'Unable to post payment.'];
+            $errorMessage = $exception->getMessage();
+            error_log('Sale::addPayment failed for sale_id=' . $saleId . ': ' . $errorMessage);
+
+            if (stripos($errorMessage, '42S02') !== false || stripos($errorMessage, "doesn't exist") !== false) {
+                return ['success' => false, 'message' => 'Payment table is missing. Run the latest database schema update, then retry.'];
+            }
+
+            return ['success' => false, 'message' => 'Unable to post payment: ' . $errorMessage];
         }
     }
 
@@ -398,8 +408,8 @@ class Sale
             recorded_by INT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_sales_payments_sale_date (sale_id, payment_date),
-            CONSTRAINT fk_sales_payments_sale FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
-        ) ENGINE=InnoDB';
+            INDEX idx_sales_payments_sale_id (sale_id)
+        ) ENGINE=MyISAM';
         $this->pdo->exec($sql);
     }
 }

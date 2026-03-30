@@ -108,17 +108,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="canonical" href="https://broilertrack.42web.io/login.php">
     <link rel="icon" type="image/png" href="assets/img/logo.png">
     <link rel="apple-touch-icon" href="assets/img/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="login-page d-flex flex-column min-vh-100">
-    <div class="login-wrapper container flex-grow-1">
-        <div class="login-card">
-            <img src="assets/img/logo.png" alt="BroilerTrack logo" class="login-logo">
+<body class="auth-page d-flex flex-column min-vh-100">
+    <div class="auth-glow auth-glow-a" aria-hidden="true"></div>
+    <div class="auth-glow auth-glow-b" aria-hidden="true"></div>
+
+    <header class="auth-header container">
+        <a href="index.php" class="auth-brand">
+            <img src="assets/img/logo.png" alt="BroilerTrack logo" width="42" height="42">
+            <span>BroilerTrack</span>
+        </a>
+        <a href="index.php" class="auth-top-link">Home</a>
+    </header>
+
+    <div class="auth-wrapper container flex-grow-1">
+        <div class="auth-card">
+            <h1>Sign In</h1>
+            <p class="auth-subtitle">Access your sales and operations dashboard.</p>
             <?php if ($error !== ''): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
-            <form method="post">
+            <form method="post" class="auth-form">
                 <?= csrf_field(); ?>
                 <label>Username
                     <input type="text" name="username" required autofocus>
@@ -126,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label>Password
                     <input type="password" name="password" required>
                 </label>
-                <button type="submit">Login</button>
+                <button type="submit" class="auth-submit">Login</button>
             </form>
         </div>
     </div>

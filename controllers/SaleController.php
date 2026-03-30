@@ -37,8 +37,8 @@ class SaleController
                 'batch_id' => $data['batch_id'],
                 'birds_sold' => $data['birds_sold'],
                 'total_revenue' => $data['total_revenue'],
-                'paid_amount' => $data['paid_amount'],
-                'balance_amount' => $data['balance_amount'],
+                'paid_amount' => 0.0,
+                'balance_amount' => $data['total_revenue'],
             ]);
         }
 
@@ -61,7 +61,7 @@ class SaleController
             return ['success' => false, 'message' => $data['error']];
         }
 
-        $result = $this->saleModel->updateWithBatchReconcile($saleId, $data, $this->salespersonOwnerId());
+        $result = $this->saleModel->updateWithBatchReconcile($saleId, $data);
         if (($result['success'] ?? false) && function_exists('audit_log')) {
             audit_log('sales', 'update', 'sale', $saleId, [
                 'batch_id' => $data['batch_id'],
@@ -84,7 +84,7 @@ class SaleController
             return ['success' => false, 'message' => 'Sale record not found.'];
         }
 
-        $result = $this->saleModel->deleteWithBatchRestore($saleId, $this->salespersonOwnerId());
+        $result = $this->saleModel->deleteWithBatchRestore($saleId);
         if (($result['success'] ?? false) && function_exists('audit_log')) {
             audit_log('sales', 'delete', 'sale', $saleId, []);
         }
@@ -113,6 +113,13 @@ class SaleController
                 'amount' => $paymentData['amount'],
                 'notes' => $paymentData['notes'],
             ]);
+        } elseif (!($result['success'] ?? false) && function_exists('audit_log')) {
+            audit_log('sales', 'add_payment_failed', 'sale', $saleId, [
+                'payment_date' => $paymentData['payment_date'] ?? null,
+                'amount' => $paymentData['amount'] ?? null,
+                'notes' => $paymentData['notes'] ?? null,
+                'reason' => (string)($result['message'] ?? 'unknown'),
+            ]);
         }
 
         return $result;
@@ -124,7 +131,7 @@ class SaleController
             'batch_id' => isset($input['batch_id']) ? (int)$input['batch_id'] : 0,
             'date' => $input['date'] ?? null,
             'birds_sold' => isset($input['birds_sold']) ? (int)$input['birds_sold'] : 0,
-            'average_weight_kg' => isset($input['average_weight_kg']) ? (float)$input['average_weight_kg'] : 0.0,
+            'average_weight_kg' => 0.0,
             'price_per_bird' => isset($input['price_per_bird']) ? (float)$input['price_per_bird'] : 0.0,
             'buyer' => trim($input['buyer'] ?? ''),
         ];
@@ -137,11 +144,11 @@ class SaleController
             return ['error' => 'Provide a valid sale date.'];
         }
 
-        if ($data['birds_sold'] <= 0 || $data['average_weight_kg'] <= 0 || $data['price_per_bird'] <= 0) {
-            return ['error' => 'Birds sold, weight, and price per bird must be greater than zero.'];
+        if ($data['birds_sold'] <= 0 || $data['price_per_bird'] <= 0) {
+            return ['error' => 'Birds sold and price per bird must be greater than zero.'];
         }
 
-        $data['total_weight'] = $data['birds_sold'] * $data['average_weight_kg'];
+        $data['total_weight'] = 0.0;
         $data['total_revenue'] = $data['birds_sold'] * $data['price_per_bird'];
 
         return $data;

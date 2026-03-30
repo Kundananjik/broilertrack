@@ -60,29 +60,14 @@ CREATE TABLE IF NOT EXISTS feed_usage (
     CONSTRAINT fk_feed_batch FOREIGN KEY (batch_id) REFERENCES batches(batch_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS growth_records (
-    record_id INT AUTO_INCREMENT PRIMARY KEY,
-    batch_id INT NOT NULL,
-    date DATE NOT NULL,
-    average_weight_kg DECIMAL(10,3) UNSIGNED NOT NULL,
-    birds_sampled INT UNSIGNED NOT NULL,
-    is_deleted TINYINT(1) NOT NULL DEFAULT 0,
-    deleted_at TIMESTAMP NULL DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_growth_records_batch_date (batch_id, date),
-    CONSTRAINT chk_growth_records_weight_positive CHECK (average_weight_kg > 0),
-    CONSTRAINT chk_growth_records_sampled_positive CHECK (birds_sampled > 0),
-    CONSTRAINT fk_growth_batch FOREIGN KEY (batch_id) REFERENCES batches(batch_id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 CREATE TABLE IF NOT EXISTS sales (
     sale_id INT AUTO_INCREMENT PRIMARY KEY,
     batch_id INT NOT NULL,
     date DATE NOT NULL,
     birds_sold INT UNSIGNED NOT NULL,
-    average_weight_kg DECIMAL(10,3) UNSIGNED NOT NULL,
+    average_weight_kg DECIMAL(10,3) UNSIGNED NOT NULL DEFAULT 0.000,
     price_per_bird DECIMAL(10,2) UNSIGNED NOT NULL,
-    total_weight DECIMAL(12,3) UNSIGNED NOT NULL,
+    total_weight DECIMAL(12,3) UNSIGNED NOT NULL DEFAULT 0.000,
     total_revenue DECIMAL(14,2) UNSIGNED NOT NULL,
     paid_amount DECIMAL(14,2) UNSIGNED NOT NULL DEFAULT 0.00,
     balance_amount DECIMAL(14,2) UNSIGNED NOT NULL DEFAULT 0.00,
@@ -93,7 +78,6 @@ CREATE TABLE IF NOT EXISTS sales (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_sales_batch_date (batch_id, date),
     CONSTRAINT chk_sales_birds_sold_positive CHECK (birds_sold > 0),
-    CONSTRAINT chk_sales_average_weight_positive CHECK (average_weight_kg > 0),
     CONSTRAINT chk_sales_price_per_bird_positive CHECK (price_per_bird > 0),
     CONSTRAINT chk_sales_total_weight_non_negative CHECK (total_weight >= 0),
     CONSTRAINT chk_sales_total_revenue_non_negative CHECK (total_revenue >= 0),
@@ -112,9 +96,9 @@ CREATE TABLE IF NOT EXISTS sales_payments (
     recorded_by INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_sales_payments_sale_date (sale_id, payment_date),
-    CONSTRAINT chk_sales_payments_amount_positive CHECK (amount > 0),
-    CONSTRAINT fk_sales_payments_sale FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+    INDEX idx_sales_payments_sale_id (sale_id),
+    CONSTRAINT chk_sales_payments_amount_positive CHECK (amount > 0)
+) ENGINE=MyISAM;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,

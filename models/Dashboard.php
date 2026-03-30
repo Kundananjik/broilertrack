@@ -23,17 +23,12 @@ class Dashboard
                 'mortality_rate' => 0.0,
                 'sales_rate' => 0.0,
                 'profit_rate' => 0.0,
-                'growth_rate' => 0.0,
                 'total_feed_used' => 0.0,
-                'average_weight' => null,
-                'total_production_weight' => 0.0,
                 'total_expenses' => 0.0,
                 'total_revenue' => 0.0,
                 'avg_price_per_bird' => 0.0,
                 'net_profit' => 0.0,
-                'feed_conversion_ratio' => 0.0,
                 'cost_per_bird' => 0.0,
-                'cost_per_kg' => 0.0,
             ];
         }
 
@@ -41,15 +36,12 @@ class Dashboard
 
         $expenseTotal = $this->scalar('SELECT COALESCE(SUM(total_cost), 0) FROM expenses WHERE batch_id = :batch_id AND is_deleted = 0', $batchId);
         $feedTotals = $this->row('SELECT COALESCE(SUM(feed_kg), 0) AS feed_kg, COALESCE(SUM(total_cost), 0) AS feed_cost FROM feed_usage WHERE batch_id = :batch_id AND is_deleted = 0', $batchId);
-        $salesTotals = $this->row('SELECT COALESCE(SUM(total_revenue), 0) AS revenue, COALESCE(SUM(total_weight), 0) AS total_weight, COALESCE(SUM(birds_sold), 0) AS birds_sold FROM sales WHERE batch_id = :batch_id AND is_deleted = 0', $batchId);
-        $latestWeight = $this->scalar('SELECT average_weight_kg FROM growth_records WHERE batch_id = :batch_id AND is_deleted = 0 ORDER BY date DESC LIMIT 1', $batchId);
-        $previousWeight = $this->scalar('SELECT average_weight_kg FROM growth_records WHERE batch_id = :batch_id AND is_deleted = 0 ORDER BY date DESC LIMIT 1 OFFSET 1', $batchId);
+        $salesTotals = $this->row('SELECT COALESCE(SUM(total_revenue), 0) AS revenue, COALESCE(SUM(birds_sold), 0) AS birds_sold FROM sales WHERE batch_id = :batch_id AND is_deleted = 0', $batchId);
         $latestPricePerBird = $this->scalar('SELECT price_per_bird FROM sales WHERE batch_id = :batch_id AND is_deleted = 0 ORDER BY date DESC, sale_id DESC LIMIT 1', $batchId);
 
         $chickCost = (float)$batch['total_chick_cost'];
         $totalExpenses = $chickCost + $expenseTotal + $feedTotals['feed_cost'];
         $totalRevenue = $salesTotals['revenue'];
-        $totalProductionWeight = $salesTotals['total_weight'];
         $birdsSold = (int)$salesTotals['birds_sold'];
         $mortalityRate = ((int)$batch['initial_chicks'] > 0)
             ? ((int)$batch['mortality_count'] / (int)$batch['initial_chicks']) * 100
@@ -58,10 +50,7 @@ class Dashboard
             ? ($birdsSold / (int)$batch['initial_chicks']) * 100
             : 0.0;
         $profitRate = $totalRevenue > 0 ? (($totalRevenue - $totalExpenses) / $totalRevenue) * 100 : 0.0;
-        $growthRate = $previousWeight > 0 ? (($latestWeight - $previousWeight) / $previousWeight) * 100 : 0.0;
-        $feedConversion = $totalProductionWeight > 0 ? $feedTotals['feed_kg'] / $totalProductionWeight : 0.0;
         $costPerBird = $latestPricePerBird > 0 ? $latestPricePerBird : 0.0;
-        $costPerKg = $totalProductionWeight > 0 ? $totalExpenses / $totalProductionWeight : 0.0;
 
         return [
             'batch' => $batch,
@@ -71,17 +60,12 @@ class Dashboard
             'mortality_rate' => $mortalityRate,
             'sales_rate' => $salesRate,
             'profit_rate' => $profitRate,
-            'growth_rate' => $growthRate,
             'total_feed_used' => $feedTotals['feed_kg'],
-            'average_weight' => $latestWeight !== null ? (float)$latestWeight : null,
-            'total_production_weight' => $totalProductionWeight,
             'total_expenses' => $totalExpenses,
             'total_revenue' => $totalRevenue,
             'avg_price_per_bird' => $birdsSold > 0 ? $totalRevenue / $birdsSold : 0.0,
             'net_profit' => $totalRevenue - $totalExpenses,
-            'feed_conversion_ratio' => $feedConversion,
             'cost_per_bird' => $costPerBird,
-            'cost_per_kg' => $costPerKg,
         ];
     }
 
@@ -183,6 +167,6 @@ class Dashboard
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['batch_id' => $batchId]);
         $row = $stmt->fetch();
-        return $row ?: ['feed_kg' => 0, 'feed_cost' => 0, 'revenue' => 0, 'total_weight' => 0, 'birds_sold' => 0];
+        return $row ?: ['feed_kg' => 0, 'feed_cost' => 0, 'revenue' => 0, 'birds_sold' => 0];
     }
 }

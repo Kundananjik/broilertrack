@@ -47,10 +47,6 @@
         <p class="label">Profit Rate</p>
         <p class="value"><?= number_format((float)$metrics['profit_rate'], 2); ?>%</p>
     </article>
-    <article class="card">
-        <p class="label">Growth Rate</p>
-        <p class="value"><?= number_format((float)$metrics['growth_rate'], 2); ?>%</p>
-    </article>
 </section>
 
 <?php
