@@ -8,6 +8,7 @@ class Sale
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
+        $this->ensurePaymentsTable();
     }
 
     public function forBatch(int $batchId, ?int $createdBy = null): array
@@ -75,6 +76,8 @@ class Sale
                 return ['success' => false, 'message' => 'Birds sold cannot exceed current alive birds.'];
             }
 
+            $data['paid_amount'] = 0.0;
+            $data['balance_amount'] = (float)$data['total_revenue'];
             $saved = $this->create($data);
             if (!$saved) {
                 $this->pdo->rollBack();
@@ -160,6 +163,14 @@ class Sale
                 $deductNew->execute(['birds' => $newBirdsSold, 'batch_id' => $newBatchId]);
             }
 
+            $existingPaid = (float)$existing['paid_amount'];
+            $newTotalRevenue = (float)$data['total_revenue'];
+            if ($existingPaid > $newTotalRevenue) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Total revenue cannot be lower than the amount already paid.'];
+            }
+            $newBalance = $newTotalRevenue - $existingPaid;
+
             $updateSale = $this->pdo->prepare(
                 'UPDATE sales
                  SET batch_id = :batch_id, date = :date, birds_sold = :birds_sold, average_weight_kg = :average_weight_kg,
@@ -176,8 +187,8 @@ class Sale
                 'price_per_bird' => $data['price_per_bird'],
                 'total_weight' => $data['total_weight'],
                 'total_revenue' => $data['total_revenue'],
-                'paid_amount' => $data['paid_amount'],
-                'balance_amount' => $data['balance_amount'],
+                'paid_amount' => $existingPaid,
+                'balance_amount' => $newBalance,
                 'buyer' => $data['buyer'],
             ]);
 
@@ -256,6 +267,72 @@ class Sale
         return (int)$stmt->fetchColumn();
     }
 
+    public function addPayment(int $saleId, array $payment, ?int $createdBy = null): array
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sale = $this->saleForUpdate($saleId, $createdBy);
+            if ($sale === null) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Sale record was not found.'];
+            }
+
+            $amount = (float)$payment['amount'];
+            if ($amount <= 0) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Payment amount must be greater than zero.'];
+            }
+
+            $currentBalance = (float)$sale['balance_amount'];
+            if ($amount > $currentBalance) {
+                $this->pdo->rollBack();
+                return ['success' => false, 'message' => 'Payment amount cannot exceed outstanding balance.'];
+            }
+
+            $insertPayment = $this->pdo->prepare(
+                'INSERT INTO sales_payments (sale_id, payment_date, amount, notes, recorded_by)
+                 VALUES (:sale_id, :payment_date, :amount, :notes, :recorded_by)'
+            );
+            $insertPayment->execute([
+                'sale_id' => $saleId,
+                'payment_date' => $payment['payment_date'],
+                'amount' => $amount,
+                'notes' => $payment['notes'],
+                'recorded_by' => $payment['recorded_by'] ?? null,
+            ]);
+
+            $newPaid = (float)$sale['paid_amount'] + $amount;
+            $newBalance = (float)$sale['total_revenue'] - $newPaid;
+
+            $updateSale = $this->pdo->prepare(
+                'UPDATE sales
+                 SET paid_amount = :paid_amount, balance_amount = :balance_amount
+                 WHERE sale_id = :sale_id AND is_deleted = 0'
+            );
+            $updateSale->execute([
+                'paid_amount' => $newPaid,
+                'balance_amount' => $newBalance,
+                'sale_id' => $saleId,
+            ]);
+
+            $paymentId = (int)$this->pdo->lastInsertId();
+            $this->pdo->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Payment posted successfully.',
+                'sale_id' => $saleId,
+                'payment_id' => $paymentId,
+            ];
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            return ['success' => false, 'message' => 'Unable to post payment.'];
+        }
+    }
+
     private function saleForUpdate(int $saleId, ?int $createdBy = null): ?array
     {
         $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -293,5 +370,36 @@ class Sale
     {
         $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         return $driver === 'sqlite' ? 'CURRENT_TIMESTAMP' : 'NOW()';
+    }
+
+    private function ensurePaymentsTable(): void
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $sql = 'CREATE TABLE IF NOT EXISTS sales_payments (
+                payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sale_id INTEGER NOT NULL,
+                payment_date TEXT NOT NULL,
+                amount REAL NOT NULL,
+                notes TEXT NULL,
+                recorded_by INTEGER NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )';
+            $this->pdo->exec($sql);
+            return;
+        }
+
+        $sql = 'CREATE TABLE IF NOT EXISTS sales_payments (
+            payment_id INT AUTO_INCREMENT PRIMARY KEY,
+            sale_id INT NOT NULL,
+            payment_date DATE NOT NULL,
+            amount DECIMAL(14,2) UNSIGNED NOT NULL,
+            notes VARCHAR(255) NULL,
+            recorded_by INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_sales_payments_sale_date (sale_id, payment_date),
+            CONSTRAINT fk_sales_payments_sale FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB';
+        $this->pdo->exec($sql);
     }
 }

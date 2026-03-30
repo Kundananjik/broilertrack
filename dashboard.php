@@ -23,10 +23,9 @@ $collectionSummary = [
 $overdueBalances = [];
 if ($isSalesperson && $metrics['batch'] !== null) {
     $batchId = (int)$metrics['batch']['batch_id'];
-    $ownerId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
-    $recentSales = $dashboardController->recentSales($batchId, 8, $ownerId > 0 ? $ownerId : -1);
-    $collectionSummary = $dashboardController->collectionSummary($batchId, $ownerId > 0 ? $ownerId : -1);
-    $overdueBalances = $dashboardController->overdueBalances($batchId, 7, 6, $ownerId > 0 ? $ownerId : -1);
+    $recentSales = $dashboardController->recentSales($batchId, 8);
+    $collectionSummary = $dashboardController->collectionSummary($batchId);
+    $overdueBalances = $dashboardController->overdueBalances($batchId, 7, 6);
 } elseif ($metrics['batch'] !== null) {
     $batchId = (int)$metrics['batch']['batch_id'];
     $collectionSummary = $dashboardController->collectionSummary($batchId);

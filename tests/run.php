@@ -167,6 +167,61 @@ function test_sale_decrements_current_alive(): void
     assert_equals(15, $remaining, 'current_alive should be decremented by birds_sold.');
 }
 
+
+function test_sale_payment_updates_paid_and_balance(): void
+{
+    $pdo = make_pdo();
+    $batchId = seed_batch($pdo, 60, 20, 0);
+    $controller = new SaleController($pdo);
+
+    $createResult = $controller->store([
+        'batch_id' => $batchId,
+        'date' => '2026-02-11',
+        'birds_sold' => 5,
+        'average_weight_kg' => 2.0,
+        'price_per_bird' => 10.0,
+        'buyer' => 'Buyer',
+    ]);
+    assert_true(($createResult['success'] ?? false) === true, 'Sale should save before adding a payment.');
+
+    $saleId = (int)$createResult['sale_id'];
+    $paymentResult = $controller->addPayment([
+        'sale_id' => $saleId,
+        'payment_date' => '2026-02-12',
+        'payment_amount' => 30.0,
+        'payment_notes' => 'Part payment',
+    ]);
+    assert_true(($paymentResult['success'] ?? false) === true, 'Payment should post successfully.');
+
+    $row = $pdo->query("SELECT paid_amount, balance_amount FROM sales WHERE sale_id = {$saleId}")->fetch(PDO::FETCH_ASSOC);
+    assert_equals(30.0, (float)$row['paid_amount'], 'Paid amount should increase after payment posting.');
+    assert_equals(20.0, (float)$row['balance_amount'], 'Balance should decrease after payment posting.');
+}
+
+function test_sale_payment_cannot_exceed_balance(): void
+{
+    $pdo = make_pdo();
+    $batchId = seed_batch($pdo, 60, 20, 0);
+    $controller = new SaleController($pdo);
+
+    $createResult = $controller->store([
+        'batch_id' => $batchId,
+        'date' => '2026-02-11',
+        'birds_sold' => 5,
+        'average_weight_kg' => 2.0,
+        'price_per_bird' => 10.0,
+        'buyer' => 'Buyer',
+    ]);
+    assert_true(($createResult['success'] ?? false) === true, 'Sale should save before validating payment limits.');
+
+    $saleId = (int)$createResult['sale_id'];
+    $paymentResult = $controller->addPayment([
+        'sale_id' => $saleId,
+        'payment_date' => '2026-02-12',
+        'payment_amount' => 51.0,
+    ]);
+    assert_true(($paymentResult['success'] ?? false) === false, 'Payment should fail when it exceeds current balance.');
+}
 function test_batch_status_considers_sold_birds(): void
 {
     $pdo = make_pdo();
@@ -205,6 +260,8 @@ try {
     test_csrf();
     test_sale_inventory_guard();
     test_sale_decrements_current_alive();
+    test_sale_payment_updates_paid_and_balance();
+    test_sale_payment_cannot_exceed_balance();
     test_batch_status_considers_sold_birds();
     test_dashboard_metrics();
     echo "All tests passed.\n";
@@ -212,3 +269,4 @@ try {
     fwrite(STDERR, "Test failure: " . $exception->getMessage() . "\n");
     exit(1);
 }
+

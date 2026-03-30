@@ -15,7 +15,8 @@ $batches = $batchController->list();
 $defaultBatchId = $batchController->defaultBatchId();
 $selectedBatchId = isset($_REQUEST['batch_id']) ? (int)$_REQUEST['batch_id'] : ($defaultBatchId ?? 0);
 $editSaleId = isset($_GET['edit_id']) ? (int)$_GET['edit_id'] : 0;
-$editingSale = $editSaleId > 0 ? $saleController->find($editSaleId) : null;
+$isAdmin = current_user_role() === 'admin';
+$editingSale = ($isAdmin && $editSaleId > 0) ? $saleController->find($editSaleId) : null;
 
 $saleFeedback = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,6 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $saleFeedback = $saleController->update($_POST);
         } elseif ($action === 'delete') {
             $saleFeedback = $saleController->delete($_POST);
+        } elseif ($action === 'add_payment') {
+            $saleFeedback = $saleController->addPayment($_POST);
         } else {
             $saleFeedback = $saleController->store($_POST);
         }

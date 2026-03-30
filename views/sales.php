@@ -3,9 +3,10 @@
     <?= htmlspecialchars($saleFeedback['message'], ENT_QUOTES, 'UTF-8'); ?>
 </div>
 <?php endif; ?>
+<?php $isAdmin = (($_SESSION['role'] ?? '') === 'admin'); ?>
 
 <section class="form-section">
-    <h2><?= $editingSale ? 'Edit Sale' : 'Record Sale'; ?></h2>
+    <h2><?= $editingSale ? 'Edit Sale Details' : 'Record Sale'; ?></h2>
     <form method="post" class="form-grid">
         <?= csrf_field(); ?>
         <input type="hidden" name="action" value="<?= $editingSale ? 'update' : 'create'; ?>">
@@ -35,17 +36,15 @@
         <label>Price per bird
             <input type="number" step="0.01" name="price_per_bird" min="0.01" value="<?= htmlspecialchars((string)($editingSale['price_per_bird'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
         </label>
-        <label>Paid Amount
-            <input type="number" step="0.01" name="paid_amount" min="0" value="<?= htmlspecialchars((string)($editingSale['paid_amount'] ?? '0.00'), ENT_QUOTES, 'UTF-8'); ?>" required>
-        </label>
         <label>Buyer
             <input type="text" name="buyer" value="<?= htmlspecialchars($editingSale['buyer'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
         </label>
-        <button type="submit"><?= $editingSale ? 'Update Sale' : 'Save Sale'; ?></button>
+        <button type="submit"><?= $editingSale ? 'Update Sale Details' : 'Save Sale'; ?></button>
         <?php if ($editingSale): ?>
             <a href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>">Cancel edit</a>
         <?php endif; ?>
     </form>
+    <p class="muted">Paid and balance are updated through payment entries in the table below.</p>
 </section>
 
 <section class="table-section">
@@ -76,6 +75,7 @@
                     <th>Paid</th>
                     <th>Balance</th>
                     <th>Buyer</th>
+                    <th>Record Payment</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -91,15 +91,29 @@
                     <td>ZMW <?= number_format((float)$sale['paid_amount'], 2); ?></td>
                     <td>ZMW <?= number_format((float)$sale['balance_amount'], 2); ?></td>
                     <td><?= htmlspecialchars($sale['buyer'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
-                    <td class="action-cell">
-                        <a class="action-link" href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>">Edit</a>
-                        <form method="post" onsubmit="return confirm('Delete this sale record?');">
+                    <td>
+                        <form method="post" class="inline-form">
                             <?= csrf_field(); ?>
-                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="action" value="add_payment">
                             <input type="hidden" name="sale_id" value="<?= (int)$sale['sale_id']; ?>">
                             <input type="hidden" name="batch_id" value="<?= (int)$selectedBatchId; ?>">
-                            <button type="submit" class="btn-danger">Delete</button>
+                            <input type="date" name="payment_date" value="<?= htmlspecialchars(date('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>" required>
+                            <input type="number" step="0.01" min="0.01" name="payment_amount" placeholder="Amount" required>
+                            <input type="text" name="payment_notes" maxlength="255" placeholder="Notes (optional)">
+                            <button type="submit">Post Payment</button>
                         </form>
+                    </td>
+                    <td class="action-cell">
+                        <?php if ($isAdmin): ?>
+                            <a class="action-link" href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>">Edit</a>
+                            <form method="post" onsubmit="return confirm('Delete this sale record?');">
+                                <?= csrf_field(); ?>
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="sale_id" value="<?= (int)$sale['sale_id']; ?>">
+                                <input type="hidden" name="batch_id" value="<?= (int)$selectedBatchId; ?>">
+                                <button type="submit" class="btn-danger">Delete</button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

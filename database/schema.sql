@@ -103,6 +103,19 @@ CREATE TABLE IF NOT EXISTS sales (
     CONSTRAINT fk_sales_batch FOREIGN KEY (batch_id) REFERENCES batches(batch_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS sales_payments (
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    sale_id INT NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(14,2) UNSIGNED NOT NULL,
+    notes VARCHAR(255) NULL,
+    recorded_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_sales_payments_sale_date (sale_id, payment_date),
+    CONSTRAINT chk_sales_payments_amount_positive CHECK (amount > 0),
+    CONSTRAINT fk_sales_payments_sale FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(60) NOT NULL UNIQUE,
