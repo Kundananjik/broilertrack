@@ -11,10 +11,7 @@ class Database
 
     public function __construct()
     {
-        $this->host = 'sql101.infinityfree.com';
-        $this->dbName = 'if0_41449878_broilertrack';
-        $this->username = 'if0_41449878';
-        $this->password = 'jSBUn37RZNW7002';
+    
     }
 
     public function getConnection(): PDO
