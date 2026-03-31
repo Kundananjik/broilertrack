@@ -60,7 +60,7 @@
         </form>
     </div>
     <div class="table-responsive">
-        <table class="table table-striped table-bordered align-middle">
+        <table class="table table-striped table-bordered align-middle sales-history-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -100,13 +100,26 @@
                     </td>
                     <td class="action-cell">
                         <?php if ($isAdmin): ?>
-                            <a class="action-link" href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>">Edit</a>
-                            <form method="post" onsubmit="return confirm('Delete this sale record?');">
+                            <a
+                                class="btn-primary action-icon-btn"
+                                href="sales.php?batch_id=<?= (int)$selectedBatchId; ?>&edit_id=<?= (int)$sale['sale_id']; ?>"
+                                aria-label="Edit sale"
+                                title="Edit sale"
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.33H5v-.92l9.06-9.06.92.92L5.92 19.58zM20.71 7.04c.39-.39.39-1.02 0-1.41L18.37 3.3a.9959.9959 0 0 0-1.41 0L15.13 5.13l3.75 3.75 1.83-1.84z"/>
+                                </svg>
+                            </a>
+                            <form method="post" class="inline-form" onsubmit="return confirm('Delete this sale record?');">
                                 <?= csrf_field(); ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="sale_id" value="<?= (int)$sale['sale_id']; ?>">
                                 <input type="hidden" name="batch_id" value="<?= (int)$selectedBatchId; ?>">
-                                <button type="submit" class="btn-danger">Delete</button>
+                                <button type="submit" class="btn-danger action-icon-btn" aria-label="Delete sale" title="Delete sale">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path d="M6 7h12v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 3v9h2v-9H9zm4 0v9h2v-9h-2zM9 2h6l1 2h5v2H3V4h5l1-2z"/>
+                                    </svg>
+                                </button>
                             </form>
                         <?php endif; ?>
                     </td>
