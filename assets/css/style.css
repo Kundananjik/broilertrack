@@ -16,18 +16,18 @@
 }
 
 html[data-theme='dark'] {
-    --bg: #0b1726;
-    --surface: #13263a;
-    --surface-soft: #102134;
-    --text: #e7f1fb;
-    --text-muted: #abc3da;
-    --sidebar-bg: #081422;
-    --sidebar-text: #d8e8f7;
-    --accent: #5fb4ff;
-    --accent-strong: #3a90db;
-    --success: #4cbf86;
-    --error: #ff8080;
-    --border: #23405a;
+    --bg: #07111d;
+    --surface: #111f2d;
+    --surface-soft: #182b3d;
+    --text: #f2f7fb;
+    --text-muted: #c0d2e3;
+    --sidebar-bg: #07101b;
+    --sidebar-text: #edf6ff;
+    --accent: #7cc7ff;
+    --accent-strong: #a7dcff;
+    --success: #69d69a;
+    --error: #ff9a9a;
+    --border: #34536d;
     --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.35);
     --shadow-strong: 0 16px 34px rgba(0, 0, 0, 0.45);
 }
@@ -210,6 +210,15 @@ table th, table td {
     vertical-align: top;
 }
 
+table th {
+    background: var(--surface-soft);
+    color: var(--text);
+}
+
+table td {
+    color: var(--text);
+}
+
 table code {
     white-space: pre-wrap;
     word-break: break-word;
@@ -314,6 +323,79 @@ button:hover {
     background: #fff5f5;
     color: var(--error);
     border: 1px solid #fed7d7;
+}
+
+html[data-theme='dark'] .card {
+    background: linear-gradient(160deg, #17293b 0%, #10202f 100%);
+}
+
+html[data-theme='dark'] .table-section,
+html[data-theme='dark'] .form-section,
+html[data-theme='dark'] .notes,
+html[data-theme='dark'] .empty-state {
+    background: var(--surface);
+    color: var(--text);
+}
+
+html[data-theme='dark'] .table,
+html[data-theme='dark'] table {
+    --bs-table-bg: var(--surface);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: #172a3d;
+    --bs-table-striped-color: var(--text);
+    --bs-table-hover-bg: #1f374d;
+    --bs-table-hover-color: var(--text);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+html[data-theme='dark'] table th {
+    background: #21384d;
+    color: #f7fbff;
+}
+
+html[data-theme='dark'] table td,
+html[data-theme='dark'] .table td,
+html[data-theme='dark'] .table th {
+    color: var(--text);
+    border-color: var(--border);
+}
+
+html[data-theme='dark'] .text-muted,
+html[data-theme='dark'] .muted,
+html[data-theme='dark'] small {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+    background: #0c1a28;
+    border-color: var(--border);
+    color: var(--text);
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+    color: #9db8cf;
+}
+
+html[data-theme='dark'] .action-link {
+    background: #1d3449;
+    color: #d7efff;
+}
+
+html[data-theme='dark'] .alert-success {
+    background: #0f2b20;
+    color: #8ff0b7;
+    border-color: #28724f;
+}
+
+html[data-theme='dark'] .alert-error {
+    background: #351819;
+    color: #ffb8b8;
+    border-color: #7c3539;
 }
 
 .inline-form {
