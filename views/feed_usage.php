@@ -1,3 +1,9 @@
+<?php
+$editingFeedRecord = $editingFeedRecord ?? null;
+$batches = $batches ?? [];
+$selectedBatchId = $selectedBatchId ?? null;
+$feedUsage = $feedUsage ?? [];
+?>
 <?php if (!empty($feedFeedback)): ?>
 <div class="alert <?= $feedFeedback['success'] ? 'alert-success' : 'alert-error'; ?>">
     <?= htmlspecialchars($feedFeedback['message'], ENT_QUOTES, 'UTF-8'); ?>
@@ -57,7 +63,7 @@
             </label>
         </form>
     </div>
-    <p class="muted">Total feed used: <?= number_format($totalFeedKg, 2); ?> kg (Cost ZMW <?= number_format($totalFeedCost, 2); ?>)</p>
+    <p class="muted">Total feed used: <?= number_format((float)($totalFeedKg ?? 0), 2); ?> kg (Cost ZMW <?= number_format((float)($totalFeedCost ?? 0), 2); ?>)</p>
     <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle">
             <thead>
