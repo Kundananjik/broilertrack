@@ -208,6 +208,37 @@ function test_sale_payment_cannot_exceed_balance(): void
     assert_true(($paymentResult['success'] ?? false) === false, 'Payment should fail when it exceeds current balance.');
 }
 
+function test_sale_updates_require_admin(): void
+{
+    $pdo = make_pdo();
+    $batchId = seed_batch($pdo, 60, 20, 0);
+    $controller = new SaleController($pdo);
+    $_SESSION['role'] = 'salesperson';
+
+    $createResult = $controller->store([
+        'batch_id' => $batchId,
+        'date' => '2026-02-11',
+        'birds_sold' => 5,
+        'price_per_bird' => 10.0,
+        'buyer' => 'Buyer',
+    ]);
+    assert_true(($createResult['success'] ?? false) === true, 'Sale should be creatable by a salesperson.');
+
+    $saleId = (int)$createResult['sale_id'];
+    $updateResult = $controller->update([
+        'sale_id' => $saleId,
+        'batch_id' => $batchId,
+        'date' => '2026-02-11',
+        'birds_sold' => 6,
+        'price_per_bird' => 10.0,
+        'buyer' => 'Buyer',
+    ]);
+    assert_true(($updateResult['success'] ?? false) === false, 'Salesperson should not be able to edit sale detail records.');
+
+    $deleteResult = $controller->delete(['sale_id' => $saleId]);
+    assert_true(($deleteResult['success'] ?? false) === false, 'Salesperson should not be able to delete sale detail records.');
+}
+
 function test_batch_status_considers_sold_birds(): void
 {
     $pdo = make_pdo();

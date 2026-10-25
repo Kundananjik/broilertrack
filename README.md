@@ -17,6 +17,14 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for broiler batch operations
 - Light/Dark theme toggle in the authenticated layout with `localStorage` persistence.
 - Modernized public pages (`index.php`, `login.php`) and responsive UI.
 
+## Project layout and cleanup status
+- The project root is the canonical application location for local development and deployment.
+- The `htdocs/` directory is a legacy mirror kept only for compatibility with older deployment conventions; it should not be treated as the active app root.
+- Weighing/growth module has been retired from active use:
+  - No growth menu item in sidebar.
+  - `growth_records.php` has been retired.
+  - Sales entry no longer requires weighing inputs from users.
+
 ## Removed Features
 - Weighing/growth module has been retired from active use:
   - No growth menu item in sidebar.

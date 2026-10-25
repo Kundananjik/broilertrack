@@ -11,11 +11,42 @@ function app_start_session(): void
     if (session_status() !== PHP_SESSION_ACTIVE) {
         ini_set('session.use_strict_mode', '1');
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443);
+            || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
+            || (isset($_SERVER['REQUEST_SCHEME']) && strtolower($_SERVER['REQUEST_SCHEME']) === 'https');
+
+        $forwardedProto = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+        $forwardedSsl = strtolower($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '');
+        $forwardedScheme = strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME'] ?? '');
+        $frontEndHttps = strtolower($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '');
+        $cfVisitor = $_SERVER['HTTP_CF_VISITOR'] ?? '';
+        $cfIsHttps = false;
+        if ($cfVisitor !== '') {
+            $cfData = json_decode($cfVisitor, true);
+            if (is_array($cfData) && isset($cfData['scheme'])) {
+                $cfIsHttps = strtolower((string)$cfData['scheme']) === 'https';
+            }
+        }
+
+        $isHttps = $isHttps
+            || $forwardedProto === 'https'
+            || $forwardedSsl === 'on'
+            || $forwardedScheme === 'https'
+            || $frontEndHttps === 'on'
+            || $cfIsHttps;
+
+        $cookieSecure = getenv('BROILERTRACK_COOKIE_SECURE');
+        if ($cookieSecure !== false) {
+            $cookieSecure = filter_var($cookieSecure, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($cookieSecure !== null) {
+                $isHttps = $cookieSecure;
+            }
+        }
+
         session_start([
             'cookie_httponly' => true,
             'cookie_samesite' => 'Lax',
             'cookie_secure' => $isHttps,
+            'cookie_path' => '/',
         ]);
     }
 }
