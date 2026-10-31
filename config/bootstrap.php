@@ -51,13 +51,61 @@ function app_start_session(): void
     }
 }
 
-function require_auth(): void
+function require_auth(bool $allowPasswordChange = false): void
 {
     app_start_session();
     if (!isset($_SESSION['user_id'])) {
         header('Location: login.php');
         exit;
     }
+
+    $user = refresh_authenticated_user(app_db(), (int)$_SESSION['user_id']);
+    if ($user === null) {
+        destroy_app_session();
+        header('Location: login.php');
+        exit;
+    }
+
+    $mustChangePassword = (int)$user['must_change_password'] === 1;
+    if ($mustChangePassword) {
+        $_SESSION['must_change_password'] = true;
+        if (!$allowPasswordChange) {
+            header('Location: change_password.php');
+            exit;
+        }
+    } else {
+        unset($_SESSION['must_change_password']);
+    }
+}
+
+function refresh_authenticated_user(PDO $pdo, int $userId): ?array
+{
+    $stmt = $pdo->prepare('SELECT role, is_active, must_change_password FROM users WHERE id = :id');
+    $stmt->execute(['id' => $userId]);
+    $user = $stmt->fetch();
+    if (!$user || (int)$user['is_active'] !== 1) {
+        return null;
+    }
+
+    $_SESSION['role'] = (string)$user['role'];
+    return $user;
+}
+
+function destroy_app_session(): void
+{
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $cookie = session_get_cookie_params();
+        setcookie(session_name(), '', [
+            'expires' => time() - 42000,
+            'path' => $cookie['path'],
+            'domain' => $cookie['domain'],
+            'secure' => $cookie['secure'],
+            'httponly' => $cookie['httponly'],
+            'samesite' => $cookie['samesite'] ?? 'Lax',
+        ]);
+    }
+    session_destroy();
 }
 
 function require_guest(): void

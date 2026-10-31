@@ -3,7 +3,7 @@
     <p>No batches found. <a href="add_batch.php">Create your first batch</a> to begin tracking.</p>
 </section>
 <?php else: ?>
-<section class="filters">
+<section class="filters dashboard-filters">
     <form method="get" action="dashboard.php" class="inline-form">
         <label for="batch_id">Batch:</label>
         <select name="batch_id" id="batch_id">
@@ -17,7 +17,7 @@
     </form>
 </section>
 
-<section class="card-grid">
+<section class="card-grid dashboard-card-grid">
     <article class="card">
         <p class="label">Active Batch</p>
         <p class="value"><?= htmlspecialchars($metrics['batch']['batch_name'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -64,6 +64,8 @@
         <p class="value"><?= number_format($metrics['profit_rate'], 2); ?>%</p>
     </article>
 </section>
+
+<?php include __DIR__ . '/sales_trend.php'; ?>
 
 <?php
 $collectionRate = (float)$collectionSummary['revenue_total'] > 0

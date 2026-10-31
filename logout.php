@@ -9,7 +9,6 @@ if (isset($_SESSION['user_id'])) {
         'username' => (string)($_SESSION['username'] ?? ''),
     ]);
 }
-session_unset();
-session_destroy();
+destroy_app_session();
 header('Location: login.php');
 exit;

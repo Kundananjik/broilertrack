@@ -30,6 +30,11 @@ class DashboardController
         return $this->dashboard->recentSales($batchId, $limit, $createdBy);
     }
 
+    public function salesTrend(int $batchId): array
+    {
+        return $this->dashboard->salesTrend($batchId);
+    }
+
     public function collectionSummary(int $batchId, ?int $createdBy = null): array
     {
         return $this->dashboard->collectionSummary($batchId, $createdBy);

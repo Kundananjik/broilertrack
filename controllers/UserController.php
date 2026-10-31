@@ -38,8 +38,8 @@ class UserController
             return ['success' => false, 'message' => 'Username must be 3-60 chars and use letters, numbers, dot, underscore or hyphen.'];
         }
 
-        if (strlen($password) < 8) {
-            return ['success' => false, 'message' => 'Password must be at least 8 characters.'];
+        if (!$this->passwordMeetsPolicy($password)) {
+            return ['success' => false, 'message' => 'Password must be at least 12 characters with uppercase and lowercase letters, a number, and a symbol, or a passphrase of at least 4 words and 20 characters.'];
         }
 
         if ($password !== $confirmPassword) {
@@ -107,8 +107,8 @@ class UserController
 
         $passwordHash = null;
         if ($password !== '' || $confirmPassword !== '') {
-            if (strlen($password) < 8) {
-                return ['success' => false, 'message' => 'Password must be at least 8 characters.'];
+            if (!$this->passwordMeetsPolicy($password)) {
+                return ['success' => false, 'message' => 'Password must be at least 12 characters with uppercase and lowercase letters, a number, and a symbol, or a passphrase of at least 4 words and 20 characters.'];
             }
             if ($password !== $confirmPassword) {
                 return ['success' => false, 'message' => 'Password confirmation does not match.'];
@@ -130,6 +130,34 @@ class UserController
         return $updated
             ? ['success' => true, 'message' => 'User updated successfully.']
             : ['success' => false, 'message' => 'Unable to update user.'];
+    }
+
+    public function changeOwnPassword(array $input, int $userId): array
+    {
+        $password = (string)($input['password'] ?? '');
+        $confirmPassword = (string)($input['confirm_password'] ?? '');
+        if (!$this->userModel->findById($userId)) {
+            return ['success' => false, 'message' => 'User not found.'];
+        }
+        if (!$this->passwordMeetsPolicy($password)) {
+            return ['success' => false, 'message' => 'Password must be at least 12 characters with uppercase and lowercase letters, a number, and a symbol, or a passphrase of at least 4 words and 20 characters.'];
+        }
+        if ($password !== $confirmPassword) {
+            return ['success' => false, 'message' => 'Password confirmation does not match.'];
+        }
+
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        if ($passwordHash === false) {
+            return ['success' => false, 'message' => 'Unable to create password hash.'];
+        }
+        $updated = $this->userModel->changePassword($userId, $passwordHash);
+        if ($updated && function_exists('audit_log')) {
+            audit_log('auth', 'password_changed', 'user', $userId, []);
+        }
+
+        return $updated
+            ? ['success' => true, 'message' => 'Password changed successfully.']
+            : ['success' => false, 'message' => 'Unable to change password.'];
     }
 
     public function deactivate(array $input, int $currentUserId): array
@@ -185,5 +213,18 @@ class UserController
         return $saved
             ? ['success' => true, 'message' => 'User reactivated successfully.']
             : ['success' => false, 'message' => 'Unable to reactivate user.'];
+    }
+
+    private function passwordMeetsPolicy(string $password): bool
+    {
+        $mixedPassword = strlen($password) >= 12
+            && preg_match('/[A-Z]/', $password) === 1
+            && preg_match('/[a-z]/', $password) === 1
+            && preg_match('/[0-9]/', $password) === 1
+            && preg_match('/[^A-Za-z0-9\s]/', $password) === 1;
+        $passphrase = strlen($password) >= 20
+            && preg_match('/^\S+(?:\s+\S+){3,}$/u', $password) === 1;
+
+        return $mixedPassword || $passphrase;
     }
 }

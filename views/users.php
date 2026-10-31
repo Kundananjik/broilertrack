@@ -23,11 +23,12 @@
             </select>
         </label>
         <label>Password
-            <input type="password" name="password" minlength="8" <?= $editingUser ? '' : 'required'; ?>>
+            <input type="password" name="password" minlength="12" autocomplete="new-password" <?= $editingUser ? '' : 'required'; ?>>
         </label>
         <label>Confirm Password
-            <input type="password" name="confirm_password" minlength="8" <?= $editingUser ? '' : 'required'; ?>>
+            <input type="password" name="confirm_password" minlength="12" autocomplete="new-password" <?= $editingUser ? '' : 'required'; ?>>
         </label>
+        <p class="muted form-help">Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol, or a passphrase of at least 4 words and 20 characters. Leave both password fields blank to keep the current password.</p>
         <button type="submit"><?= $editingUser ? 'Update User' : 'Create User'; ?></button>
         <?php if ($editingUser): ?>
             <a class="btn-secondary" href="users.php">Cancel edit</a>

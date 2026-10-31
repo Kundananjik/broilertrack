@@ -12,6 +12,9 @@ $dashboardController = new DashboardController($pdo);
 $selectedBatchId = isset($_GET['batch_id']) ? (int)$_GET['batch_id'] : null;
 $metrics = $dashboardController->getMetrics($selectedBatchId);
 $batches = $dashboardController->listBatches();
+$salesTrend = $metrics['batch'] !== null
+    ? $dashboardController->salesTrend((int)$metrics['batch']['batch_id'])
+    : [];
 $isSalesperson = current_user_role() === 'salesperson';
 $recentSales = [];
 $collectionSummary = [

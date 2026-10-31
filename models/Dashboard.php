@@ -87,6 +87,48 @@ class Dashboard
         return $stmt->fetchAll() ?: [];
     }
 
+    public function salesTrend(int $batchId): array
+    {
+        $today = new DateTimeImmutable('today');
+        $firstMonth = $today->modify('first day of this month')->modify('-5 months');
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $monthExpression = $driver === 'sqlite'
+            ? "strftime('%Y-%m', date)"
+            : "DATE_FORMAT(date, '%Y-%m')";
+        $stmt = $this->pdo->prepare(
+            "SELECT {$monthExpression} AS month, COALESCE(SUM(total_revenue), 0) AS revenue,
+                    COALESCE(SUM(birds_sold), 0) AS birds_sold
+             FROM sales
+             WHERE batch_id = :batch_id AND is_deleted = 0 AND date >= :start_date AND date <= :end_date
+             GROUP BY month
+             ORDER BY month ASC"
+        );
+        $stmt->execute([
+            'batch_id' => $batchId,
+            'start_date' => $firstMonth->format('Y-m-d'),
+            'end_date' => $today->format('Y-m-d'),
+        ]);
+        $monthlyTotals = [];
+        foreach ($stmt->fetchAll() ?: [] as $row) {
+            $monthlyTotals[(string)$row['month']] = $row;
+        }
+
+        $trend = [];
+        for ($offset = 0; $offset < 6; $offset++) {
+            $month = $firstMonth->modify("+{$offset} months");
+            $key = $month->format('Y-m');
+            $totals = $monthlyTotals[$key] ?? [];
+            $trend[] = [
+                'month' => $key,
+                'label' => $month->format('M Y'),
+                'revenue' => (float)($totals['revenue'] ?? 0),
+                'birds_sold' => (int)($totals['birds_sold'] ?? 0),
+            ];
+        }
+
+        return $trend;
+    }
+
     public function collectionSummary(int $batchId, ?int $createdBy = null): array
     {
         $sql = 'SELECT

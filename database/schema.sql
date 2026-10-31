@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS sales_payments (
     INDEX idx_sales_payments_sale_date (sale_id, payment_date),
     INDEX idx_sales_payments_sale_id (sale_id),
     CONSTRAINT chk_sales_payments_amount_positive CHECK (amount > 0)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(40) NOT NULL DEFAULT 'admin',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
+    must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_users_role CHECK (role IN ('admin', 'salesperson'))
 ) ENGINE=InnoDB;

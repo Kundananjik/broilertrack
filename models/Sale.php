@@ -409,7 +409,7 @@ class Sale
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_sales_payments_sale_date (sale_id, payment_date),
             INDEX idx_sales_payments_sale_id (sale_id)
-        ) ENGINE=MyISAM';
+        ) ENGINE=InnoDB';
         $this->pdo->exec($sql);
     }
 }

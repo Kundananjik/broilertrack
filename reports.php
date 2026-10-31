@@ -125,6 +125,11 @@ $dateFrom = trim((string)($_GET['date_from'] ?? ''));
 $dateTo = trim((string)($_GET['date_to'] ?? ''));
 $export = (string)($_GET['export'] ?? '');
 
+if (!is_valid_date_range($dateFrom, $dateTo)) {
+    http_response_code(400);
+    exit('Invalid report date range. Use valid dates in YYYY-MM-DD format and ensure the start date is not after the end date.');
+}
+
 $conditions = ['s.is_deleted = 0'];
 $params = [];
 
@@ -262,13 +267,13 @@ if (in_array($export, ['csv', 'excel', 'pdf'], true)) {
                 fputcsv($out, [
                     (int)$row['sale_id'],
                     (string)$row['date'],
-                    (string)$row['batch_name'],
+                    spreadsheet_safe_text((string)$row['batch_name']),
                     (int)$row['birds_sold'],
                     number_format((float)$row['price_per_bird'], 2, '.', ''),
                     number_format((float)$row['total_revenue'], 2, '.', ''),
                     number_format((float)$row['paid_amount'], 2, '.', ''),
                     number_format((float)$row['balance_amount'], 2, '.', ''),
-                    (string)($row['buyer'] ?? ''),
+                    spreadsheet_safe_text((string)($row['buyer'] ?? '')),
                 ]);
             }
             fclose($out);
@@ -293,13 +298,13 @@ if (in_array($export, ['csv', 'excel', 'pdf'], true)) {
             echo '<tr>';
             echo '<td>' . (int)$row['sale_id'] . '</td>';
             echo '<td>' . htmlspecialchars((string)$row['date'], ENT_QUOTES, 'UTF-8') . '</td>';
-            echo '<td>' . htmlspecialchars((string)$row['batch_name'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars(spreadsheet_safe_text((string)$row['batch_name']), ENT_QUOTES, 'UTF-8') . '</td>';
             echo '<td>' . (int)$row['birds_sold'] . '</td>';
             echo '<td>' . number_format((float)$row['price_per_bird'], 2, '.', '') . '</td>';
             echo '<td>' . number_format((float)$row['total_revenue'], 2, '.', '') . '</td>';
             echo '<td>' . number_format((float)$row['paid_amount'], 2, '.', '') . '</td>';
             echo '<td>' . number_format((float)$row['balance_amount'], 2, '.', '') . '</td>';
-            echo '<td>' . htmlspecialchars((string)($row['buyer'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars(spreadsheet_safe_text((string)($row['buyer'] ?? '')), ENT_QUOTES, 'UTF-8') . '</td>';
             echo '</tr>';
         }
         echo "</table>";
@@ -350,7 +355,7 @@ include __DIR__ . '/views/layout_header.php';
     </p>
 </section>
 
-<section class="card-grid">
+<section class="card-grid report-card-grid">
     <article class="card">
         <p class="label">Total Revenue</p>
         <p class="value">ZMW <?= number_format($totalRevenue, 2); ?></p>

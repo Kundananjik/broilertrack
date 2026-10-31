@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/helpers.php';
 require_once __DIR__ . '/../config/csrf.php';
+require_once __DIR__ . '/../config/bootstrap.php';
 require_once __DIR__ . '/../controllers/SaleController.php';
 require_once __DIR__ . '/../controllers/BatchController.php';
+require_once __DIR__ . '/../controllers/UserController.php';
 require_once __DIR__ . '/../models/Dashboard.php';
 
 function assert_true(bool $condition, string $message): void
@@ -85,6 +87,16 @@ function make_pdo(): PDO
         deleted_at TEXT
     )');
 
+    $pdo->exec('CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        must_change_password INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )');
+
     return $pdo;
 }
 
@@ -117,6 +129,16 @@ function test_csrf(): void
     $token = csrf_token();
     $_POST['csrf_token'] = $token;
     assert_true(csrf_verify(), 'CSRF verification should pass with the generated token.');
+}
+
+function test_report_filter_and_spreadsheet_validation(): void
+{
+    assert_true(is_valid_date_range('2026-01-01', '2026-12-31'), 'Valid report date ranges should be accepted.');
+    assert_true(!is_valid_date_range('2026-02-30', '2026-03-01'), 'Invalid calendar dates should be rejected.');
+    assert_true(!is_valid_date_range('2026-03-01', '2026-02-28'), 'Reversed report date ranges should be rejected.');
+    assert_equals("'=SUM(A1:A2)", spreadsheet_safe_text('=SUM(A1:A2)'), 'Spreadsheet formulas should be treated as text.');
+    assert_equals("'  @SUM(A1:A2)", spreadsheet_safe_text('  @SUM(A1:A2)'), 'Formula markers after whitespace should be treated as text.');
+    assert_equals('Batch 12', spreadsheet_safe_text('Batch 12'), 'Ordinary spreadsheet text should be unchanged.');
 }
 
 function test_sale_inventory_guard(): void
@@ -208,6 +230,35 @@ function test_sale_payment_cannot_exceed_balance(): void
     assert_true(($paymentResult['success'] ?? false) === false, 'Payment should fail when it exceeds current balance.');
 }
 
+function test_sale_payment_rolls_back_if_sale_update_fails(): void
+{
+    $pdo = make_pdo();
+    $batchId = seed_batch($pdo, 60, 20, 0);
+    $controller = new SaleController($pdo);
+    $createResult = $controller->store([
+        'batch_id' => $batchId,
+        'date' => '2026-02-11',
+        'birds_sold' => 5,
+        'price_per_bird' => 10.0,
+        'buyer' => 'Buyer',
+    ]);
+    assert_true(($createResult['success'] ?? false) === true, 'Sale should save before testing payment rollback.');
+    $saleId = (int)$createResult['sale_id'];
+    $pdo->exec("CREATE TRIGGER reject_sale_payment_update BEFORE UPDATE ON sales
+        BEGIN SELECT RAISE(ABORT, 'forced payment update failure'); END");
+
+    $paymentResult = $controller->addPayment([
+        'sale_id' => $saleId,
+        'payment_date' => '2026-02-12',
+        'payment_amount' => 30.0,
+    ]);
+    assert_true(($paymentResult['success'] ?? false) === false, 'Payment should fail when the sale update fails.');
+    assert_equals(0, (int)$pdo->query("SELECT COUNT(*) FROM sales_payments WHERE sale_id = {$saleId}")->fetchColumn(), 'Failed payment update should roll back the payment ledger insert.');
+    $sale = $pdo->query("SELECT paid_amount, balance_amount FROM sales WHERE sale_id = {$saleId}")->fetch(PDO::FETCH_ASSOC);
+    assert_equals(0.0, (float)$sale['paid_amount'], 'Failed payment update should leave paid total unchanged.');
+    assert_equals(50.0, (float)$sale['balance_amount'], 'Failed payment update should leave balance unchanged.');
+}
+
 function test_sale_updates_require_admin(): void
 {
     $pdo = make_pdo();
@@ -272,14 +323,141 @@ function test_dashboard_metrics(): void
     assert_equals(60.0, (float)$metrics['net_profit'], 'Net profit should be revenue minus expenses.');
 }
 
+function test_dashboard_sales_trend(): void
+{
+    $pdo = make_pdo();
+    $batchId = seed_batch($pdo);
+    $today = new DateTimeImmutable('today');
+    $firstMonth = $today->modify('first day of this month')->modify('-5 months');
+    $insert = $pdo->prepare(
+        'INSERT INTO sales (batch_id, date, birds_sold, price_per_bird, total_revenue, buyer)
+         VALUES (:batch_id, :date, :birds_sold, :price_per_bird, :total_revenue, :buyer)'
+    );
+    foreach ([[$firstMonth, 3, 30.0], [$today->modify('first day of this month'), 2, 20.0]] as [$date, $birdsSold, $revenue]) {
+        $insert->execute([
+            'batch_id' => $batchId,
+            'date' => $date->format('Y-m-d'),
+            'birds_sold' => $birdsSold,
+            'price_per_bird' => 10,
+            'total_revenue' => $revenue,
+            'buyer' => 'Buyer',
+        ]);
+    }
+
+    $trend = (new Dashboard($pdo))->salesTrend($batchId);
+    assert_equals(6, count($trend), 'Sales trend should include six calendar months.');
+    assert_equals($firstMonth->format('Y-m'), $trend[0]['month'], 'Sales trend should start five months before the current month.');
+    assert_equals(30.0, $trend[0]['revenue'], 'Sales trend should aggregate revenue for each month.');
+    assert_equals(3, $trend[0]['birds_sold'], 'Sales trend should aggregate birds sold for each month.');
+    assert_equals(20.0, $trend[5]['revenue'], 'Sales trend should include current-month sales.');
+}
+
+function test_user_password_policy(): void
+{
+    $pdo = make_pdo();
+    $controller = new UserController($pdo);
+    $baseInput = [
+        'username' => 'farmuser',
+        'role' => 'salesperson',
+    ];
+
+    $weakResult = $controller->create($baseInput + [
+        'password' => 'admin123',
+        'confirm_password' => 'admin123',
+    ]);
+    assert_true(!$weakResult['success'], 'User creation should reject weak passwords.');
+
+    $createResult = $controller->create($baseInput + [
+        'password' => 'Strong#Pass2026',
+        'confirm_password' => 'Strong#Pass2026',
+    ]);
+    assert_true($createResult['success'], 'User creation should accept a complex password.');
+    $userId = (int)$pdo->lastInsertId();
+
+    $weakUpdate = $controller->update([
+        'user_id' => $userId,
+        'username' => 'farmuser',
+        'role' => 'salesperson',
+        'password' => 'simplepass',
+        'confirm_password' => 'simplepass',
+    ]);
+    assert_true(!$weakUpdate['success'], 'Password changes should reject weak passwords.');
+
+    $passphraseUpdate = $controller->update([
+        'user_id' => $userId,
+        'username' => 'farmuser',
+        'role' => 'salesperson',
+        'password' => 'correct horse battery staple',
+        'confirm_password' => 'correct horse battery staple',
+    ]);
+    assert_true($passphraseUpdate['success'], 'Password changes should accept a long multi-word passphrase.');
+}
+
+function test_forced_password_change_clears_requirement(): void
+{
+    $pdo = make_pdo();
+    $stmt = $pdo->prepare(
+        'INSERT INTO users (username, password_hash, role, must_change_password)
+         VALUES (:username, :password_hash, :role, 1)'
+    );
+    $stmt->execute([
+        'username' => 'admin',
+        'password_hash' => password_hash('admin123', PASSWORD_DEFAULT),
+        'role' => 'admin',
+    ]);
+    $userId = (int)$pdo->lastInsertId();
+
+    $result = (new UserController($pdo))->changeOwnPassword([
+        'password' => 'Strong#Pass2026',
+        'confirm_password' => 'Strong#Pass2026',
+    ], $userId);
+    assert_true($result['success'], 'Forced password change should accept a compliant new password.');
+
+    $user = $pdo->query("SELECT password_hash, must_change_password FROM users WHERE id = {$userId}")->fetch(PDO::FETCH_ASSOC);
+    assert_true(password_verify('Strong#Pass2026', $user['password_hash']), 'Forced password change should save the new password hash.');
+    assert_equals(0, (int)$user['must_change_password'], 'Forced password change should clear the requirement flag.');
+}
+
+function test_authenticated_user_state_is_refreshed(): void
+{
+    $pdo = make_pdo();
+    $stmt = $pdo->prepare(
+        'INSERT INTO users (username, password_hash, role, is_active, must_change_password)
+         VALUES (:username, :password_hash, :role, :is_active, :must_change_password)'
+    );
+    $stmt->execute([
+        'username' => 'authuser',
+        'password_hash' => password_hash('Strong#Pass2026', PASSWORD_DEFAULT),
+        'role' => 'salesperson',
+        'is_active' => 1,
+        'must_change_password' => 1,
+    ]);
+    $userId = (int)$pdo->lastInsertId();
+
+    $_SESSION['user_id'] = $userId;
+    $_SESSION['role'] = 'admin';
+    $user = refresh_authenticated_user($pdo, $userId);
+    assert_equals('salesperson', $_SESSION['role'], 'Authenticated role should refresh from the database.');
+    assert_equals(1, (int)$user['must_change_password'], 'Password-change requirement should refresh from the database.');
+
+    $pdo->prepare('UPDATE users SET is_active = 0 WHERE id = :id')->execute(['id' => $userId]);
+    assert_equals(null, refresh_authenticated_user($pdo, $userId), 'Disabled accounts should no longer have an authenticated user state.');
+}
+
 try {
     test_csrf();
+    test_report_filter_and_spreadsheet_validation();
     test_sale_inventory_guard();
     test_sale_decrements_current_alive();
     test_sale_payment_updates_paid_and_balance();
     test_sale_payment_cannot_exceed_balance();
+    test_sale_payment_rolls_back_if_sale_update_fails();
     test_batch_status_considers_sold_birds();
     test_dashboard_metrics();
+    test_dashboard_sales_trend();
+    test_user_password_policy();
+    test_forced_password_change_clears_requirement();
+    test_authenticated_user_state_is_refreshed();
     echo "All tests passed.\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, "Test failure: " . $exception->getMessage() . "\n");

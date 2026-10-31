@@ -11,10 +11,29 @@ class Database
 
     public function __construct()
     {
-        $this->host = getenv('BROILERTRACK_DB_HOST') ?: 'localhost';
-        $this->dbName = getenv('BROILERTRACK_DB_NAME') ?: 'broilertrack';
-        $this->username = getenv('BROILERTRACK_DB_USER') ?: 'root';
-        $this->password = getenv('BROILERTRACK_DB_PASS') ?: '';
+        $environment = strtolower(trim((string)(getenv('BROILERTRACK_ENV') ?: 'development')));
+        if (!in_array($environment, ['development', 'production'], true)) {
+            throw new RuntimeException('BROILERTRACK_ENV must be development or production.');
+        }
+
+        $settings = [
+            'host' => getenv('BROILERTRACK_DB_HOST'),
+            'name' => getenv('BROILERTRACK_DB_NAME'),
+            'user' => getenv('BROILERTRACK_DB_USER'),
+            'pass' => getenv('BROILERTRACK_DB_PASS'),
+        ];
+        if ($environment === 'production') {
+            foreach ($settings as $key => $value) {
+                if ($value === false || trim($value) === '') {
+                    throw new RuntimeException('All BROILERTRACK_DB_* settings must be configured in production.');
+                }
+            }
+        }
+
+        $this->host = $settings['host'] ?: 'localhost';
+        $this->dbName = $settings['name'] ?: 'broilertrack';
+        $this->username = $settings['user'] ?: 'root';
+        $this->password = $settings['pass'] ?: '';
     }
 
     public function getConnection(): PDO

@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($error === '') {
-            $stmt = $pdo->prepare('SELECT id, username, password_hash, role, is_active FROM users WHERE username = :username');
+            $stmt = $pdo->prepare('SELECT id, username, password_hash, role, is_active, must_change_password FROM users WHERE username = :username');
             $stmt->execute(['username' => $username]);
             $user = $stmt->fetch();
 
@@ -50,14 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clearAttempts->execute(['username' => $username, 'ip_address' => $ipAddress]);
 
                 session_regenerate_id(true);
+                unset($_SESSION['csrf_token']);
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
+                if ((int)$user['must_change_password'] === 1) {
+                    $_SESSION['must_change_password'] = true;
+                }
                 audit_log('auth', 'login_success', 'user', (int)$user['id'], [
                     'username' => (string)$user['username'],
                     'role' => (string)$user['role'],
                 ]);
-                header('Location: dashboard.php');
+                header('Location: ' . ((int)$user['must_change_password'] === 1 ? 'change_password.php' : 'dashboard.php'));
                 exit;
             } else {
                 if ($user && (int)$user['is_active'] !== 1) {
@@ -111,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= (int)filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
 <body class="auth-page d-flex flex-column min-vh-100">
     <div class="auth-glow auth-glow-a" aria-hidden="true"></div>
@@ -146,6 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <?php require __DIR__ . '/views/footer_content.php'; ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

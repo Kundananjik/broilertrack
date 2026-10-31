@@ -15,5 +15,5 @@ INSERT INTO feed_usage (batch_id, date, feed_type, feed_kg, cost_per_kg, total_c
 INSERT INTO sales (batch_id, date, birds_sold, average_weight_kg, price_per_bird, total_weight, total_revenue, paid_amount, balance_amount, buyer) VALUES
 (1, '2026-02-25', 450, 0.000, 3.10, 0.000, 3138.75, 3138.75, 0.00, 'FreshMart Butchery');
 
-INSERT INTO users (username, password_hash, role) VALUES
-('admin', '$2y$10$0AhJfgp3nuHJww2yDzESSOfxQIZ6FzlfEgrj7eu0x/7aJUQoqmMc.', 'admin');
+INSERT INTO users (username, password_hash, role, must_change_password) VALUES
+('admin', '$2y$10$0AhJfgp3nuHJww2yDzESSOfxQIZ6FzlfEgrj7eu0x/7aJUQoqmMc.', 'admin', 1);

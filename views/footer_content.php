@@ -8,7 +8,6 @@ $currentYear = date('Y');
     <div class="footer-meta">
         <p class="footer-title">BroilerTrack Management System | Version <?= htmlspecialchars(BROILERTRACK_VERSION, ENT_QUOTES, 'UTF-8'); ?></p>
         <p>Developed by Kundananji Simukonda</p>
-        <p>Email: <a href="mailto:kundananjisimukonda@gmail.com">kundananjisimukonda@gmail.com</a> | Phone: <a href="tel:+260971863462">+260 97 186 3462</a></p>
         <p>Copyright &copy; <?= htmlspecialchars($currentYear, ENT_QUOTES, 'UTF-8'); ?> Kundananji Simukonda. All rights reserved.</p>
     </div>
 </footer>

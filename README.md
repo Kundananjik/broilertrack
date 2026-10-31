@@ -10,11 +10,15 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for broiler batch operations
   - Post payment entries per sale.
   - `paid_amount` and `balance_amount` are recalculated safely.
   - Overpayment is blocked by validation.
+- Transactional payment ledger using InnoDB.
 - Dashboard metrics for revenue, expenses, profit, sales rate, mortality, and collections.
 - Admin reporting (`reports.php`) with batch/date filters and CSV/Excel/PDF export.
 - Audit logging (`audit_logs.php`) for operational actions.
 - Soft-delete behavior for expenses, feed usage, and sales.
 - Light/Dark theme toggle in the authenticated layout with `localStorage` persistence.
+- Six-month revenue and birds-sold trend on both dashboards.
+- Strong password requirements when administrators create users or change passwords.
+- The seeded admin account must change its initial password before using protected pages.
 - Modernized public pages (`index.php`, `login.php`) and responsive UI.
 
 ## Project layout and cleanup status
@@ -52,16 +56,24 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for broiler batch operations
 2. Start Apache and MySQL.
 3. Create database `broilertrack`.
 4. Run `database/schema.sql`, then `database/seed.sql`.
-5. Update DB settings in `config/database.php` or set env vars:
+5. For local development, the DB defaults are `localhost`, database `broilertrack`, user `root`, and an empty password. For production, set `BROILERTRACK_ENV=production` and configure all four DB variables; the app fails fast rather than using local defaults if any are missing:
    - `BROILERTRACK_DB_HOST`
    - `BROILERTRACK_DB_NAME`
    - `BROILERTRACK_DB_USER`
    - `BROILERTRACK_DB_PASS`
-6. Open `http://localhost/broilertrack/login.php`.
+6. Open `http://localhost/broilertrack/login.php`. After signing in with the development seed credentials, choose a new password to continue.
 
-## Default Credentials
+### Updating an existing installation
+1. Back up the database.
+2. Select the BroilerTrack database, then run `database/migrations/20261031_transactional_payments_and_admin_password.sql`.
+3. Deploy the updated application files. The migration is safe to run again.
+4. The seeded admin account is required to change its password on the next protected page load. Existing logins are also checked against this requirement.
+
+## Development Seed Credentials
 - Username: `admin`
 - Password: `admin123`
+
+These legacy seed credentials do not meet the new password requirements. After the first login, change the admin password when prompted before continuing. Password rules apply when a password is created or changed.
 
 ## Pages
 - Public:
@@ -83,10 +95,13 @@ BroilerTrack is a lightweight PHP + MySQL dashboard for broiler batch operations
 
 ## Security Notes
 - Session-protected routes.
+- Each authenticated request rechecks that the account is active and refreshes the user's current role from the database.
 - CSRF protection on write actions.
 - Password hashing for credentials.
+- New or changed passwords must use at least 12 characters with uppercase and lowercase letters, a number, and a symbol, or a passphrase of at least 4 words and 20 characters.
 - Login attempt rate-limiting / lockout.
 - Inactive users cannot log in.
+- Production deployments must explicitly configure a non-empty DB host, database name, user, and password.
 - Admin cannot deactivate own active session account.
 
 ## Testing

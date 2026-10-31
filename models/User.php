@@ -56,7 +56,7 @@ class User
     {
         if ($passwordHash !== null) {
             $stmt = $this->pdo->prepare(
-                'UPDATE users SET username = :username, role = :role, password_hash = :password_hash WHERE id = :id'
+                'UPDATE users SET username = :username, role = :role, password_hash = :password_hash, must_change_password = 0 WHERE id = :id'
             );
             return $stmt->execute([
                 'id' => $id,
@@ -71,6 +71,17 @@ class User
             'id' => $id,
             'username' => $username,
             'role' => $role,
+        ]);
+    }
+
+    public function changePassword(int $id, string $passwordHash): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET password_hash = :password_hash, must_change_password = 0 WHERE id = :id'
+        );
+        return $stmt->execute([
+            'id' => $id,
+            'password_hash' => $passwordHash,
         ]);
     }
 
