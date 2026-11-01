@@ -2,12 +2,16 @@
     --bg: #f3f7fb;
     --surface: #ffffff;
     --surface-soft: #f8fbff;
-    --text: #102a43;
-    --text-muted: #5f738a;
-    --sidebar-bg: #102a43;
-    --sidebar-text: #f0f4f8;
+    --text: #000000;
+    --text-muted: #4a4a4a;
+    --sidebar-bg: #e2eaf2;
+    --sidebar-text: #000000;
     --accent: #1f6fb2;
     --accent-strong: #165384;
+    --button-bg: #b8d9ef;
+    --button-secondary-bg: #cfdeeb;
+    --button-danger-bg: #f2c7c3;
+    --button-text: #000000;
     --success: #2f855a;
     --error: #c53030;
     --border: #d0deeb;
@@ -25,6 +29,10 @@ html[data-theme='dark'] {
     --sidebar-text: #edf6ff;
     --accent: #7cc7ff;
     --accent-strong: #a7dcff;
+    --button-bg: #165384;
+    --button-secondary-bg: #34536d;
+    --button-danger-bg: #c53030;
+    --button-text: #ffffff;
     --success: #69d69a;
     --error: #ff9a9a;
     --border: #34536d;
@@ -104,13 +112,22 @@ img {
     border-radius: 10px;
 }
 
+.sidebar nav a.text-white {
+    color: var(--sidebar-text) !important;
+}
+
 .sidebar nav a:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .sidebar nav a.logout {
     margin-top: auto;
-    color: #fed7d7;
+    color: var(--sidebar-text);
+}
+
+.mobile-topbar .btn-outline-light {
+    color: var(--sidebar-text);
+    border-color: var(--sidebar-text);
 }
 
 .content {
@@ -336,8 +353,8 @@ input, select, textarea {
 button {
     margin-top: 1.5rem;
     padding: 0.58rem 0.95rem;
-    background: var(--accent);
-    color: #fff;
+    background: var(--button-bg);
+    color: var(--button-text);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -370,23 +387,23 @@ button:hover {
 }
 
 .btn-primary {
-    background: var(--accent);
-    color: #fff;
+    background: var(--button-bg);
+    color: var(--button-text);
 }
 
 .btn-secondary {
-    background: var(--accent-strong);
-    color: #fff;
+    background: var(--button-secondary-bg);
+    color: var(--button-text);
 }
 
 .btn-danger {
-    background: var(--error);
-    color: #fff;
+    background: var(--button-danger-bg);
+    color: var(--button-text);
 }
 
 .action-link {
     background: var(--surface-soft);
-    color: var(--accent-strong);
+    color: var(--text);
 }
 
 .alert {
@@ -698,7 +715,7 @@ html[data-theme='dark'] .alert-error {
 
 .welcome-card h1 {
     margin: 0.4rem 0 0.6rem;
-    color: #1f4f82;
+    color: var(--text);
     font-size: 1.3rem;
 }
 

@@ -1,0 +1,13 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)\. - [F,END]
+    RewriteRule ^(config|controllers|database|models|tests|views)(/|$) - [F,END,NC]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "(^\.|^(README\.md|\.hintrc)$|.*\.(env|ini|log|sql|bak|backup|old|dist|swp)$)">
+        Require all denied
+    </FilesMatch>
+</IfModule>

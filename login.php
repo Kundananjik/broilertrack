@@ -54,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = (int)$user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['session_started_at'] = time();
+                $_SESSION['last_activity_at'] = time();
                 if ((int)$user['must_change_password'] === 1) {
                     $_SESSION['must_change_password'] = true;
                 }

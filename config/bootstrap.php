@@ -6,49 +6,120 @@ date_default_timezone_set('Africa/Lusaka');
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/csrf.php';
 
+function app_environment(): string
+{
+    $environment = strtolower(trim((string)(getenv('BROILERTRACK_ENV') ?: 'development')));
+    if (!in_array($environment, ['development', 'production'], true)) {
+        throw new RuntimeException('BROILERTRACK_ENV must be development or production.');
+    }
+
+    return $environment;
+}
+
+function app_is_https(): bool
+{
+    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443
+        || (isset($_SERVER['REQUEST_SCHEME']) && strtolower((string)$_SERVER['REQUEST_SCHEME']) === 'https');
+
+    $trustProxy = filter_var(
+        getenv('BROILERTRACK_TRUST_PROXY_HTTPS') ?: 'false',
+        FILTER_VALIDATE_BOOLEAN
+    );
+
+    return $isHttps || ($trustProxy && strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
+}
+
+function app_production_base_url(): string
+{
+    $baseUrl = rtrim((string)(getenv('BROILERTRACK_BASE_URL') ?: ''), '/');
+    $parts = parse_url($baseUrl);
+    if (
+        $parts === false
+        || strtolower((string)($parts['scheme'] ?? '')) !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['query'])
+        || isset($parts['fragment'])
+        || (isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/')
+    ) {
+        throw new RuntimeException('BROILERTRACK_BASE_URL must be the HTTPS origin used by this production installation.');
+    }
+
+    return $baseUrl;
+}
+
+function app_send_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+
+    header_remove('X-Powered-By');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: camera=(), geolocation=(), microphone=()');
+    header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:");
+}
+
 function app_start_session(): void
 {
+    $environment = app_environment();
+    app_send_security_headers();
+
+    if ($environment === 'production') {
+        $baseUrl = app_production_base_url();
+        $cookieSecure = getenv('BROILERTRACK_COOKIE_SECURE');
+        if ($cookieSecure !== false && !filter_var($cookieSecure, FILTER_VALIDATE_BOOLEAN)) {
+            throw new RuntimeException('BROILERTRACK_COOKIE_SECURE cannot be disabled in production.');
+        }
+
+        if (!app_is_https()) {
+            $requestUri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+            if ($requestUri === '' || $requestUri[0] !== '/' || str_starts_with($requestUri, '//') || preg_match('/[\r\n]/', $requestUri)) {
+                $requestUri = '/';
+            }
+            header('Location: ' . $baseUrl . $requestUri, true, 301);
+            exit;
+        }
+
+        header('Strict-Transport-Security: max-age=31536000');
+        ini_set('display_errors', '0');
+        ini_set('display_startup_errors', '0');
+        ini_set('log_errors', '1');
+    }
+
+    $isHttps = $environment === 'production' || app_is_https();
+    $sessionOptions = [
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Lax',
+        'cookie_secure' => $isHttps,
+        'cookie_path' => '/',
+    ];
+
     if (session_status() !== PHP_SESSION_ACTIVE) {
         ini_set('session.use_strict_mode', '1');
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
-            || (isset($_SERVER['REQUEST_SCHEME']) && strtolower($_SERVER['REQUEST_SCHEME']) === 'https');
-
-        $forwardedProto = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
-        $forwardedSsl = strtolower($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '');
-        $forwardedScheme = strtolower($_SERVER['HTTP_X_FORWARDED_SCHEME'] ?? '');
-        $frontEndHttps = strtolower($_SERVER['HTTP_FRONT_END_HTTPS'] ?? '');
-        $cfVisitor = $_SERVER['HTTP_CF_VISITOR'] ?? '';
-        $cfIsHttps = false;
-        if ($cfVisitor !== '') {
-            $cfData = json_decode($cfVisitor, true);
-            if (is_array($cfData) && isset($cfData['scheme'])) {
-                $cfIsHttps = strtolower((string)$cfData['scheme']) === 'https';
-            }
-        }
-
-        $isHttps = $isHttps
-            || $forwardedProto === 'https'
-            || $forwardedSsl === 'on'
-            || $forwardedScheme === 'https'
-            || $frontEndHttps === 'on'
-            || $cfIsHttps;
-
-        $cookieSecure = getenv('BROILERTRACK_COOKIE_SECURE');
-        if ($cookieSecure !== false) {
-            $cookieSecure = filter_var($cookieSecure, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if ($cookieSecure !== null) {
-                $isHttps = $cookieSecure;
-            }
-        }
-
-        session_start([
-            'cookie_httponly' => true,
-            'cookie_samesite' => 'Lax',
-            'cookie_secure' => $isHttps,
-            'cookie_path' => '/',
-        ]);
+        ini_set('session.gc_maxlifetime', '43200');
+        session_start($sessionOptions);
     }
+
+    $now = time();
+    $lastActivity = filter_var($_SESSION['last_activity_at'] ?? null, FILTER_VALIDATE_INT);
+    $sessionStarted = filter_var($_SESSION['session_started_at'] ?? null, FILTER_VALIDATE_INT);
+    if (
+        ($lastActivity !== false && $lastActivity !== null && $now - $lastActivity > 1800)
+        || ($sessionStarted !== false && $sessionStarted !== null && $now - $sessionStarted > 43200)
+    ) {
+        destroy_app_session();
+        session_start($sessionOptions);
+        session_regenerate_id(true);
+        $_SESSION = [];
+    }
+
+    $_SESSION['session_started_at'] = $_SESSION['session_started_at'] ?? $now;
+    $_SESSION['last_activity_at'] = $now;
 }
 
 function require_auth(bool $allowPasswordChange = false): void
